@@ -33,11 +33,16 @@ param(
     [switch]$Once,
     [switch]$Status,
     [ValidateSet('Hide', 'Show')][string]$Force,
-    [string]$ConfigPath = (Join-Path $PSScriptRoot 'config.json')
+    [string]$ConfigPath
 )
 
 $ErrorActionPreference = 'Stop'
-$LogPath = Join-Path $PSScriptRoot 'TaskbarAutoHide.log'
+
+# $PSScriptRoot ist im param()-Block nicht zuverlaessig gesetzt, daher hier ermitteln.
+$ScriptDir = $PSScriptRoot
+if (-not $ScriptDir) { $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path }
+if (-not $ConfigPath) { $ConfigPath = Join-Path $ScriptDir 'config.json' }
+$LogPath = Join-Path $ScriptDir 'TaskbarAutoHide.log'
 
 # --- Native Aufrufe ----------------------------------------------------------
 if (-not ('TaskbarNative' -as [type])) {
