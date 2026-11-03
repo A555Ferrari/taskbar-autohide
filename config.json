@@ -1,0 +1,6 @@
+{
+  "mode": "monitors",
+  "minExternalMonitors": 1,
+  "dockMatch": [],
+  "pollSeconds": 5
+}
