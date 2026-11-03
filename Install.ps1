@@ -21,6 +21,9 @@ $ErrorActionPreference = 'Stop'
 $taskName = 'TaskbarAutoHide'
 $target = Join-Path $env:LOCALAPPDATA 'TaskbarAutoHide'
 
+# Dateien aus einer ZIP/einem Download sind von Windows als "blockiert" markiert
+Get-ChildItem -Path $PSScriptRoot -File | Unblock-File -ErrorAction SilentlyContinue
+
 Write-Host "Installiere nach $target ..."
 New-Item -ItemType Directory -Path $target -Force | Out-Null
 

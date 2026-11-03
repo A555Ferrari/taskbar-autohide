@@ -1,10 +1,29 @@
 # TaskbarAutoHide
 
+![Windows 10/11](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?logo=windows&logoColor=white)
+![PowerShell 5.1+](https://img.shields.io/badge/PowerShell-5.1%2B-5391FE?logo=powershell&logoColor=white)
+![Lizenz MIT](https://img.shields.io/badge/Lizenz-MIT-green)
+
 Blendet die Windows-Taskleiste automatisch aus, sobald externe Bildschirme (oder eine Dockingstation) angeschlossen sind. Nur am Laptop-Display bleibt sie dauerhaft sichtbar.
 
-## Warum das Ganze?
+Ohne Zusatzsoftware, ohne Admin-Rechte, nur PowerShell.
 
-Die Windows-Einstellung **"Taskleiste automatisch ausblenden"** (Einstellungen → Personalisierung → Taskleiste → Verhalten der Taskleiste) gilt global. Windows kennt keine Regel wie "nur mit externem Monitor". Dieses Script schaltet die Einstellung automatisch um, je nach Situation:
+## Inhalt
+
+- [Warum?](#warum)
+- [Schnellstart](#schnellstart)
+- [Wie funktioniert es?](#wie-funktioniert-es)
+- [Konfiguration](#konfiguration)
+- [Dockingstation einrichten](#dockingstation-einrichten)
+- [Testen und Status](#testen-und-status)
+- [Deinstallation](#deinstallation)
+- [Fehlersuche](#fehlersuche)
+- [Hinweise und Grenzen](#hinweise-und-grenzen)
+- [Dateien](#dateien)
+
+## Warum?
+
+Die Windows-Einstellung **"Taskleiste automatisch ausblenden"** (Einstellungen → Personalisierung → Taskleiste → Verhalten der Taskleiste) gilt global. Windows kennt keine Regel wie "nur mit externem Monitor". Dieses Script schaltet die Einstellung automatisch um:
 
 | Situation | Taskleiste |
 |---|---|
@@ -12,43 +31,48 @@ Die Windows-Einstellung **"Taskleiste automatisch ausblenden"** (Einstellungen �
 | Externer Monitor angeschlossen | automatisch ausgeblendet |
 | Dockingstation erkannt (optional) | automatisch ausgeblendet |
 
-## Warum PowerShell und nicht AutoHotkey?
+Warum PowerShell statt AutoHotkey? Es läuft auf jedem Windows 10/11 ohne Installation, braucht keine Admin-Rechte und ist auf Firmen-PCs meist erlaubt, wo AutoHotkey oft gesperrt ist.
 
-- Läuft auf jedem Windows 10/11 ohne Zusatzsoftware.
-- Keine Admin-Rechte nötig, alles läuft im Benutzerkontext.
-- Auf Firmen-PCs ist PowerShell meist erlaubt, AutoHotkey oft nicht.
+## Schnellstart
+
+1. Repo als ZIP herunterladen und **in einen eigenen Ordner entpacken**. Achtung: Beim Entpacken entsteht oft ein Ordner im Ordner. Du musst in den inneren wechseln, in dem `Install.ps1` direkt liegt.
+2. PowerShell öffnen und dorthin wechseln:
+
+   ```powershell
+   cd "C:\Users\DEIN_NAME\Downloads\taskbar-autohide\taskbar-autohide"
+   ```
+
+3. Installieren:
+
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File .\Install.ps1
+   ```
+
+Fertig. Die Installation startet das Script sofort und danach bei jeder Anmeldung automatisch. Ein Neustart ist nicht nötig. Am Ende der Installation wird der aktuelle Status angezeigt, bei angeschlossenen externen Monitoren sollte dort `Auto-Hide aktuell: True` stehen.
+
+Was `Install.ps1` genau macht:
+
+- Dateien nach `%LOCALAPPDATA%\TaskbarAutoHide` kopieren (eine vorhandene `config.json` bleibt erhalten)
+- Dateien entsperren (`Unblock-File`), weil Windows heruntergeladene Scripts sonst blockieren kann
+- geplante Aufgabe `TaskbarAutoHide` anlegen (Start bei Anmeldung) und starten
+- falls geplante Aufgaben nicht erlaubt sind: Verknüpfung im Autostart-Ordner als Fallback
+
+Den Modus kannst du direkt bei der Installation setzen:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\Install.ps1 -Mode either
+```
 
 ## Wie funktioniert es?
 
 1. Ein Hintergrundprozess prüft alle paar Sekunden (Standard: 5), ob "angedockt" ist.
 2. Bei einem Zustandswechsel wird Auto-Hide über die Windows-API `SHAppBarMessage` mit `ABM_SETSTATE` umgeschaltet. Das ist derselbe Mechanismus wie in den Einstellungen, nur ohne Explorer-Neustart.
-3. Externe Monitore werden über WMI (`WmiMonitorConnectionParams`) erkannt. Das interne Laptop-Display wird dabei nicht mitgezählt.
+3. Externe Monitore werden über WMI (`WmiMonitorConnectionParams`) erkannt. Das interne Laptop-Display zählt dabei nicht mit. Falls WMI nichts liefert, gilt als Fallback "Bildschirmanzahl minus 1".
 4. Dockingstationen erkennt Windows nicht direkt. Optional wird deshalb nach einem Gerät gesucht, das nur mit Dock vorhanden ist (z.B. USB-Hub oder Netzwerkadapter der Dock).
 5. Startet der Explorer neu (Absturz, Neustart), setzt das Script den Zustand von selbst wieder.
+6. Eine manuell geänderte Einstellung wird nicht ständig überschrieben. Das Script greift nur bei einem Wechsel zwischen "angedockt" und "nicht angedockt" ein.
 
 Die Konfiguration wird bei jedem Durchlauf neu gelesen, Änderungen an `config.json` wirken also ohne Neustart.
-
-## Installation
-
-Repo klonen oder als ZIP laden, dann in PowerShell im Repo-Ordner:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\Install.ps1
-```
-
-Das macht:
-
-- Dateien nach `%LOCALAPPDATA%\TaskbarAutoHide` kopieren (eine vorhandene `config.json` bleibt erhalten)
-- geplante Aufgabe `TaskbarAutoHide` anlegen (Start bei jeder Anmeldung)
-- Script sofort starten und den Status ausgeben
-
-Ist eine geplante Aufgabe nicht erlaubt, wird automatisch eine Verknüpfung im Autostart-Ordner angelegt.
-
-Modus direkt bei der Installation setzen:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\Install.ps1 -Mode either
-```
 
 ## Konfiguration
 
@@ -70,9 +94,9 @@ Datei: `%LOCALAPPDATA%\TaskbarAutoHide\config.json`
 | `dockMatch` | Liste von Mustern (Wildcards), z.B. `["*Dell Dock*"]`. Geprüft wird gegen Gerätename und Instanz-ID. Nur relevant bei `dock` und `either`. |
 | `pollSeconds` | Prüfintervall in Sekunden (mindestens 2). Im Dock-Modus eher 10 nehmen, die Geräteabfrage ist etwas träger. |
 
-### Dockingstation einrichten
+## Dockingstation einrichten
 
-Das passende Muster findest du mit dem Vorher/Nachher-Vergleich:
+In der Praxis hängt an der Dock fast immer ein Monitor, dann reicht `mode: monitors` völlig aus. Willst du die Dock auch ohne Monitor erkennen, findest du das passende Muster mit einem Vorher/Nachher-Vergleich:
 
 ```powershell
 # 1. Dock abgesteckt:
@@ -84,8 +108,6 @@ Das passende Muster findest du mit dem Vorher/Nachher-Vergleich:
 
 Die Ausgabe zeigt alle Geräte, die erst mit Dock aufgetaucht sind. Nimm einen eindeutigen Namen (z.B. den Netzwerkadapter oder Hub der Dock), trag ihn als Muster in `dockMatch` ein und stell `mode` auf `dock` oder `either`.
 
-Beispiel:
-
 ```json
 {
   "mode": "either",
@@ -95,15 +117,21 @@ Beispiel:
 }
 ```
 
-Tipp: In der Praxis hängt an der Dock fast immer ein Monitor. Dann reicht `mode: monitors` völlig aus.
-
 ## Testen und Status
 
 ```powershell
-.\TaskbarAutoHide.ps1 -Status        # Modus, erkannte Monitore, Dock, aktueller Zustand
-.\TaskbarAutoHide.ps1 -Force Hide    # Auto-Hide einmalig erzwingen
-.\TaskbarAutoHide.ps1 -Force Show    # Taskleiste einmalig wieder dauerhaft anzeigen
-.\TaskbarAutoHide.ps1 -Once          # einmal prüfen und setzen, dann beenden
+$s = "$env:LOCALAPPDATA\TaskbarAutoHide\TaskbarAutoHide.ps1"
+
+& $s -Status        # Modus, erkannte Monitore, Dock, aktueller Zustand
+& $s -Force Hide    # Auto-Hide einmalig erzwingen
+& $s -Force Show    # Taskleiste einmalig wieder dauerhaft anzeigen
+& $s -Once          # einmal prüfen und setzen, dann beenden
+```
+
+Prozess manuell (neu) starten:
+
+```powershell
+Start-ScheduledTask -TaskName TaskbarAutoHide
 ```
 
 Log: `%LOCALAPPDATA%\TaskbarAutoHide\TaskbarAutoHide.log` (wird bei Zustandswechseln geschrieben und bei 200 KB automatisch gekürzt).
@@ -114,21 +142,27 @@ Log: `%LOCALAPPDATA%\TaskbarAutoHide\TaskbarAutoHide.log` (wird bei Zustandswech
 powershell -ExecutionPolicy Bypass -File .\Uninstall.ps1
 ```
 
-Optionen:
+Das entfernt die geplante Aufgabe bzw. die Autostart-Verknüpfung, beendet den Prozess und stellt die Taskleiste wieder auf "immer sichtbar". Optionen:
 
 - `-KeepAutoHide`: Taskleiste nicht zurück auf "immer sichtbar" stellen
 - `-RemoveFiles`: auch `%LOCALAPPDATA%\TaskbarAutoHide` löschen (aus dem Repo-Ordner starten)
 
 ## Fehlersuche
 
-**Nichts passiert nach der Installation.**
-`.\TaskbarAutoHide.ps1 -Status` ausführen. Zeigt es 0 externe Monitore, obwohl einer dran ist, greift der Fallback (Bildschirmanzahl minus 1) möglicherweise nicht. Dann ins Log schauen und prüfen, ob `Get-CimInstance -Namespace root\wmi -ClassName WmiMonitorConnectionParams` Werte liefert.
+**`Install.ps1` wird nicht gefunden.**
+Du bist im falschen Ordner. Nach dem Entpacken liegt die Datei oft eine Ebene tiefer. Mit `Get-ChildItem -Path $env:USERPROFILE -Recurse -Filter Install.ps1 -ErrorAction SilentlyContinue | Select-Object FullName` findest du sie.
+
+**Nach der Installation bleibt die Taskleiste sichtbar.**
+`-Status` ausführen. Steht dort `Gilt als angedockt: True`, aber `Auto-Hide aktuell: False`, läuft der Hintergrundprozess nicht. Dann `Start-ScheduledTask -TaskName TaskbarAutoHide` und ins Log schauen.
+
+**Es werden 0 externe Monitore erkannt, obwohl einer dran ist.**
+Prüfen, ob `Get-CimInstance -Namespace root\wmi -ClassName WmiMonitorConnectionParams` Werte liefert. Wenn nicht, greift der Fallback (Bildschirmanzahl minus 1).
 
 **Taskleiste verschwindet auch ohne externen Monitor.**
 Im Modus `monitors` prüfen, ob Windows einen "virtuellen" Bildschirm meldet (z.B. Remote-Sitzung, virtuelle Display-Treiber). `-Status` zeigt die Anzahl.
 
 **Dock wird nicht erkannt.**
-`Find-Dock.ps1` nochmal durchlaufen und ein spezifischeres Muster wählen. Namen mit Leerzeichen funktionieren, Wildcards (`*`) davor und danach nicht vergessen.
+`Find-Dock.ps1` nochmal durchlaufen und ein spezifischeres Muster wählen. Wildcards (`*`) davor und danach nicht vergessen.
 
 **Fehlermeldung wegen ExecutionPolicy.**
 Immer mit `-ExecutionPolicy Bypass` aufrufen, wie oben gezeigt. Erzwingt eine Gruppenrichtlinie (AppLocker, Constrained Language Mode) etwas anderes, funktioniert das Script dort nicht.
@@ -141,7 +175,7 @@ Normal beim Start des versteckten PowerShell-Prozesses. Es verschwindet sofort.
 - Auto-Hide gilt für alle Taskleisten. Pro Bildschirm getrennt geht es in Windows nicht.
 - Läuft nur, solange du angemeldet bist (Benutzerkontext).
 - Auf Firmen-PCs vorher prüfen, ob Scripts und geplante Aufgaben erlaubt sind und ob die Taskleisten-Einstellung per Richtlinie gesperrt ist.
-- Status: Das Script wurde ohne Zugriff auf einen Windows-Rechner geschrieben und noch nicht auf echter Hardware getestet. Funktioniert etwas nicht, bitte `-Status` und das Log prüfen und das Problem hier im Repo festhalten.
+- Getestet: Modus `monitors` unter Windows 11 mit zwei externen Monitoren (Ausblenden bestätigt). Der Dock-Modus (`dock`, `either`) ist bisher nicht auf echter Hardware geprüft.
 
 ## Dateien
 
@@ -152,3 +186,9 @@ Normal beim Start des versteckten PowerShell-Prozesses. Es verschwindet sofort.
 | `Uninstall.ps1` | Entfernt alles wieder |
 | `Find-Dock.ps1` | Findet ein Erkennungsmuster für die Dockingstation |
 | `config.json` | Standardkonfiguration |
+| `CHANGELOG.md` | Änderungen pro Version |
+| `LICENSE` | MIT-Lizenz |
+
+## Lizenz
+
+MIT, siehe [LICENSE](LICENSE).
