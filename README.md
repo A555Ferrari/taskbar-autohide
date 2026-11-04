@@ -2,11 +2,14 @@
 
 ![Windows 10/11](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?logo=windows&logoColor=white)
 ![PowerShell 5.1+](https://img.shields.io/badge/PowerShell-5.1%2B-5391FE?logo=powershell&logoColor=white)
+![Version 1.0.1](https://img.shields.io/badge/Version-1.0.1-blue)
 ![Lizenz MIT](https://img.shields.io/badge/Lizenz-MIT-green)
+
+**Deutsch** | [English](README.en.md)
 
 Blendet die Windows-Taskleiste automatisch aus, sobald externe Bildschirme (oder eine Dockingstation) angeschlossen sind. Nur am Laptop-Display bleibt sie dauerhaft sichtbar.
 
-Ohne Zusatzsoftware, ohne Admin-Rechte, nur PowerShell.
+Ohne Zusatzsoftware, ohne Admin-Rechte, nur PowerShell. Kein Netzwerkzugriff, keine Telemetrie.
 
 ## Inhalt
 
@@ -55,6 +58,7 @@ Was `Install.ps1` genau macht:
 - Dateien nach `%LOCALAPPDATA%\TaskbarAutoHide` kopieren (eine vorhandene `config.json` bleibt erhalten)
 - Dateien entsperren (`Unblock-File`), weil Windows heruntergeladene Scripts sonst blockieren kann
 - geplante Aufgabe `TaskbarAutoHide` anlegen (Start bei Anmeldung) und starten
+- zusätzlich einen Autostart-Eintrag im Run-Key des Benutzers setzen, falls die Aufgabe beim Login nicht anläuft (doppelter Start ist harmlos, es läuft immer nur eine Instanz)
 - falls geplante Aufgaben nicht erlaubt sind: Verknüpfung im Autostart-Ordner als Fallback
 
 Den Modus kannst du direkt bei der Installation setzen:
@@ -152,6 +156,9 @@ Das entfernt die geplante Aufgabe bzw. die Autostart-Verknüpfung, beendet den P
 **`Install.ps1` wird nicht gefunden.**
 Du bist im falschen Ordner. Nach dem Entpacken liegt die Datei oft eine Ebene tiefer. Mit `Get-ChildItem -Path $env:USERPROFILE -Recurse -Filter Install.ps1 -ErrorAction SilentlyContinue | Select-Object FullName` findest du sie.
 
+**Nach Abmelden oder Neustart funktioniert es nicht mehr.**
+Seit Version 1.0.1 startet das Script über die geplante Aufgabe und zusätzlich über den Run-Key. Mit einer älteren Version `Install.ps1` einfach erneut ausführen. Prüfen kannst du es mit `Get-ScheduledTask -TaskName TaskbarAutoHide | Get-ScheduledTaskInfo` (`LastRunTime` sollte der letzte Login sein) und `Start-ScheduledTask -TaskName TaskbarAutoHide` startet es von Hand.
+
 **Nach der Installation bleibt die Taskleiste sichtbar.**
 `-Status` ausführen. Steht dort `Gilt als angedockt: True`, aber `Auto-Hide aktuell: False`, läuft der Hintergrundprozess nicht. Dann `Start-ScheduledTask -TaskName TaskbarAutoHide` und ins Log schauen.
 
@@ -170,6 +177,18 @@ Immer mit `-ExecutionPolicy Bypass` aufrufen, wie oben gezeigt. Erzwingt eine Gr
 **Kurzes Fenster-Aufblitzen beim Anmelden.**
 Normal beim Start des versteckten PowerShell-Prozesses. Es verschwindet sofort.
 
+## Was verändert das Script auf dem System?
+
+Transparent und überschaubar, alles im Benutzerkontext:
+
+- schaltet die Taskleisten-Einstellung "automatisch ausblenden" um (über die Windows-API, wie die Einstellungen selbst)
+- legt Dateien in `%LOCALAPPDATA%\TaskbarAutoHide` ab (Script, `config.json`, Log)
+- legt eine geplante Aufgabe `TaskbarAutoHide` und einen Run-Key-Eintrag `TaskbarAutoHide` unter `HKCU` an
+- liest Monitor- und Geräteinformationen über WMI bzw. `Get-PnpDevice`
+- **keine** Netzwerkverbindungen, **keine** Admin-Rechte, **keine** Änderungen an Systemeinstellungen oder Richtlinien
+
+`Uninstall.ps1` entfernt alles wieder. Der Quellcode ist kurz genug, um ihn vor der Installation selbst durchzulesen.
+
 ## Hinweise und Grenzen
 
 - Auto-Hide gilt für alle Taskleisten. Pro Bildschirm getrennt geht es in Windows nicht.
@@ -186,6 +205,7 @@ Normal beim Start des versteckten PowerShell-Prozesses. Es verschwindet sofort.
 | `Uninstall.ps1` | Entfernt alles wieder |
 | `Find-Dock.ps1` | Findet ein Erkennungsmuster für die Dockingstation |
 | `config.json` | Standardkonfiguration |
+| `README.en.md` | English documentation |
 | `CHANGELOG.md` | Änderungen pro Version |
 | `LICENSE` | MIT-Lizenz |
 
