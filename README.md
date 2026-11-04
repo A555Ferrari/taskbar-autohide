@@ -3,84 +3,71 @@
 ![Windows 10/11](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?logo=windows&logoColor=white)
 ![PowerShell 5.1+](https://img.shields.io/badge/PowerShell-5.1%2B-5391FE?logo=powershell&logoColor=white)
 ![Version 1.0.1](https://img.shields.io/badge/Version-1.0.1-blue)
-![Lizenz MIT](https://img.shields.io/badge/Lizenz-MIT-green)
+![License MIT](https://img.shields.io/badge/License-MIT-green)
 
-**Deutsch** | [English](README.en.md)
+**English** | [Deutsch](README.de.md)
 
-Blendet die Windows-Taskleiste automatisch aus, sobald externe Bildschirme (oder eine Dockingstation) angeschlossen sind. Nur am Laptop-Display bleibt sie dauerhaft sichtbar.
+Automatically hides the Windows taskbar when external monitors (or a docking station) are connected. On the laptop display alone, the taskbar stays visible.
 
-Ohne Zusatzsoftware, ohne Admin-Rechte, nur PowerShell. Kein Netzwerkzugriff, keine Telemetrie.
+No extra software, no admin rights, just PowerShell. No network access, no telemetry.
 
-## Inhalt
+## Why?
 
-- [Warum?](#warum)
-- [Schnellstart](#schnellstart)
-- [Wie funktioniert es?](#wie-funktioniert-es)
-- [Konfiguration](#konfiguration)
-- [Dockingstation einrichten](#dockingstation-einrichten)
-- [Testen und Status](#testen-und-status)
-- [Deinstallation](#deinstallation)
-- [Fehlersuche](#fehlersuche)
-- [Hinweise und Grenzen](#hinweise-und-grenzen)
-- [Dateien](#dateien)
+The Windows setting **"Automatically hide the taskbar"** (Settings → Personalization → Taskbar → Taskbar behaviors) is global. Windows has no rule like "only with an external monitor". This script flips the setting for you:
 
-## Warum?
-
-Die Windows-Einstellung **"Taskleiste automatisch ausblenden"** (Einstellungen → Personalisierung → Taskleiste → Verhalten der Taskleiste) gilt global. Windows kennt keine Regel wie "nur mit externem Monitor". Dieses Script schaltet die Einstellung automatisch um:
-
-| Situation | Taskleiste |
+| Situation | Taskbar |
 |---|---|
-| Nur internes Display | immer sichtbar |
-| Externer Monitor angeschlossen | automatisch ausgeblendet |
-| Dockingstation erkannt (optional) | automatisch ausgeblendet |
+| Built-in display only | always visible |
+| External monitor connected | auto-hidden |
+| Docking station detected (optional) | auto-hidden |
 
-Warum PowerShell statt AutoHotkey? Es läuft auf jedem Windows 10/11 ohne Installation, braucht keine Admin-Rechte und ist auf Firmen-PCs meist erlaubt, wo AutoHotkey oft gesperrt ist.
+Why PowerShell instead of AutoHotkey? It runs on any Windows 10/11 without installing anything, needs no admin rights, and is usually allowed on managed PCs where AutoHotkey often is not.
 
-## Schnellstart
+## Quick start
 
-1. Repo als ZIP herunterladen und **in einen eigenen Ordner entpacken**. Achtung: Beim Entpacken entsteht oft ein Ordner im Ordner. Du musst in den inneren wechseln, in dem `Install.ps1` direkt liegt.
-2. PowerShell öffnen und dorthin wechseln:
+1. Download the repo as a ZIP and **extract it into its own folder**. Note: extracting often creates a folder inside a folder. Change into the inner one, where `Install.ps1` sits directly.
+2. Open PowerShell and go there:
 
    ```powershell
-   cd "C:\Users\DEIN_NAME\Downloads\taskbar-autohide\taskbar-autohide"
+   cd "C:\Users\YOUR_NAME\Downloads\taskbar-autohide\taskbar-autohide"
    ```
 
-3. Installieren:
+3. Install:
 
    ```powershell
    powershell -ExecutionPolicy Bypass -File .\Install.ps1
    ```
 
-Fertig. Die Installation startet das Script sofort und danach bei jeder Anmeldung automatisch. Ein Neustart ist nicht nötig. Am Ende der Installation wird der aktuelle Status angezeigt, bei angeschlossenen externen Monitoren sollte dort `Auto-Hide aktuell: True` stehen.
+That's it. The installer starts the script immediately and again at every sign-in. No reboot needed. At the end it prints the current status; with external monitors connected it should show `Auto-Hide aktuell: True` (the status output is in German).
 
-Was `Install.ps1` genau macht:
+What `Install.ps1` does:
 
-- Dateien nach `%LOCALAPPDATA%\TaskbarAutoHide` kopieren (eine vorhandene `config.json` bleibt erhalten)
-- Dateien entsperren (`Unblock-File`), weil Windows heruntergeladene Scripts sonst blockieren kann
-- geplante Aufgabe `TaskbarAutoHide` anlegen (Start bei Anmeldung) und starten
-- zusätzlich einen Autostart-Eintrag im Run-Key des Benutzers setzen, falls die Aufgabe beim Login nicht anläuft (doppelter Start ist harmlos, es läuft immer nur eine Instanz)
-- falls geplante Aufgaben nicht erlaubt sind: Verknüpfung im Autostart-Ordner als Fallback
+- copies the files to `%LOCALAPPDATA%\TaskbarAutoHide` (an existing `config.json` is kept)
+- unblocks the files (`Unblock-File`), because Windows may block downloaded scripts
+- creates a scheduled task `TaskbarAutoHide` (runs at sign-in) and starts it
+- additionally sets an autostart entry in the user's Run key as a safety net in case the task does not fire at sign-in (starting twice is harmless, only one instance ever runs)
+- if scheduled tasks are not allowed: falls back to a shortcut in the Startup folder
 
-Den Modus kannst du direkt bei der Installation setzen:
+Set the mode right at install time:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\Install.ps1 -Mode either
 ```
 
-## Wie funktioniert es?
+## How it works
 
-1. Ein Hintergrundprozess prüft alle paar Sekunden (Standard: 5), ob "angedockt" ist.
-2. Bei einem Zustandswechsel wird Auto-Hide über die Windows-API `SHAppBarMessage` mit `ABM_SETSTATE` umgeschaltet. Das ist derselbe Mechanismus wie in den Einstellungen, nur ohne Explorer-Neustart.
-3. Externe Monitore werden über WMI (`WmiMonitorConnectionParams`) erkannt. Das interne Laptop-Display zählt dabei nicht mit. Falls WMI nichts liefert, gilt als Fallback "Bildschirmanzahl minus 1".
-4. Dockingstationen erkennt Windows nicht direkt. Optional wird deshalb nach einem Gerät gesucht, das nur mit Dock vorhanden ist (z.B. USB-Hub oder Netzwerkadapter der Dock).
-5. Startet der Explorer neu (Absturz, Neustart), setzt das Script den Zustand von selbst wieder.
-6. Eine manuell geänderte Einstellung wird nicht ständig überschrieben. Das Script greift nur bei einem Wechsel zwischen "angedockt" und "nicht angedockt" ein.
+1. A background process checks every few seconds (default: 5) whether the PC is "docked".
+2. On a state change, auto-hide is toggled through the Windows API `SHAppBarMessage` with `ABM_SETSTATE`. This is the same mechanism the Settings app uses, just without restarting Explorer.
+3. External monitors are detected via WMI (`WmiMonitorConnectionParams`). The built-in laptop display is not counted. If WMI returns nothing, the fallback is "screen count minus one".
+4. Windows does not expose docking stations directly. Optionally, the script looks for a device that is only present with the dock (e.g. its USB hub or network adapter).
+5. If Explorer restarts (crash, restart), the script re-applies the state on its own.
+6. A manually changed setting is not constantly overridden. The script only acts when the state flips between "docked" and "not docked".
 
-Die Konfiguration wird bei jedem Durchlauf neu gelesen, Änderungen an `config.json` wirken also ohne Neustart.
+The configuration is re-read on every cycle, so changes to `config.json` take effect without a restart.
 
-## Konfiguration
+## Configuration
 
-Datei: `%LOCALAPPDATA%\TaskbarAutoHide\config.json`
+File: `%LOCALAPPDATA%\TaskbarAutoHide\config.json`
 
 ```json
 {
@@ -91,26 +78,26 @@ Datei: `%LOCALAPPDATA%\TaskbarAutoHide\config.json`
 }
 ```
 
-| Feld | Bedeutung |
+| Field | Meaning |
 |---|---|
-| `mode` | `monitors`: ausblenden, wenn externe Monitore da sind. `dock`: ausblenden, wenn die Dock erkannt wird. `either`: eines von beiden reicht. |
-| `minExternalMonitors` | Ab wie vielen externen Monitoren gilt es als "angedockt" (Standard 1). |
-| `dockMatch` | Liste von Mustern (Wildcards), z.B. `["*Dell Dock*"]`. Geprüft wird gegen Gerätename und Instanz-ID. Nur relevant bei `dock` und `either`. |
-| `pollSeconds` | Prüfintervall in Sekunden (mindestens 2). Im Dock-Modus eher 10 nehmen, die Geräteabfrage ist etwas träger. |
+| `mode` | `monitors`: hide when external monitors are present. `dock`: hide when the dock is detected. `either`: either one is enough. |
+| `minExternalMonitors` | How many external monitors count as "docked" (default 1). |
+| `dockMatch` | List of wildcard patterns, e.g. `["*Dell Dock*"]`, matched against device name and instance ID. Only relevant for `dock` and `either`. |
+| `pollSeconds` | Check interval in seconds (minimum 2). Use about 10 in dock mode, the device query is a bit slower. |
 
-## Dockingstation einrichten
+## Setting up a docking station
 
-In der Praxis hängt an der Dock fast immer ein Monitor, dann reicht `mode: monitors` völlig aus. Willst du die Dock auch ohne Monitor erkennen, findest du das passende Muster mit einem Vorher/Nachher-Vergleich:
+In practice a monitor is almost always attached to the dock, so `mode: monitors` is enough. To detect the dock even without a monitor, find the right pattern with a before/after comparison:
 
 ```powershell
-# 1. Dock abgesteckt:
+# 1. With the dock unplugged:
 .\Find-Dock.ps1 -Save
 
-# 2. Dock anschliessen, dann:
+# 2. Plug in the dock, then:
 .\Find-Dock.ps1 -Compare
 ```
 
-Die Ausgabe zeigt alle Geräte, die erst mit Dock aufgetaucht sind. Nimm einen eindeutigen Namen (z.B. den Netzwerkadapter oder Hub der Dock), trag ihn als Muster in `dockMatch` ein und stell `mode` auf `dock` oder `either`.
+The output lists all devices that only appeared with the dock. Pick a unique name (e.g. the dock's network adapter or hub), put it into `dockMatch`, and set `mode` to `dock` or `either`.
 
 ```json
 {
@@ -121,94 +108,94 @@ Die Ausgabe zeigt alle Geräte, die erst mit Dock aufgetaucht sind. Nimm einen e
 }
 ```
 
-## Testen und Status
+## Testing and status
 
 ```powershell
 $s = "$env:LOCALAPPDATA\TaskbarAutoHide\TaskbarAutoHide.ps1"
 
-& $s -Status        # Modus, erkannte Monitore, Dock, aktueller Zustand
-& $s -Force Hide    # Auto-Hide einmalig erzwingen
-& $s -Force Show    # Taskleiste einmalig wieder dauerhaft anzeigen
-& $s -Once          # einmal prüfen und setzen, dann beenden
+& $s -Status        # mode, detected monitors, dock, current state
+& $s -Force Hide    # force auto-hide once
+& $s -Force Show    # show the taskbar permanently once
+& $s -Once          # check and apply once, then exit
 ```
 
-Prozess manuell (neu) starten:
+Start the process manually:
 
 ```powershell
 Start-ScheduledTask -TaskName TaskbarAutoHide
 ```
 
-Log: `%LOCALAPPDATA%\TaskbarAutoHide\TaskbarAutoHide.log` (wird bei Zustandswechseln geschrieben und bei 200 KB automatisch gekürzt).
+Log: `%LOCALAPPDATA%\TaskbarAutoHide\TaskbarAutoHide.log` (written on state changes, trimmed automatically at 200 KB).
 
-## Deinstallation
+## Uninstall
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\Uninstall.ps1
 ```
 
-Das entfernt die geplante Aufgabe bzw. die Autostart-Verknüpfung, beendet den Prozess und stellt die Taskleiste wieder auf "immer sichtbar". Optionen:
+This removes the scheduled task, the Run-key entry and the Startup shortcut, stops the process and sets the taskbar back to "always visible". Options:
 
-- `-KeepAutoHide`: Taskleiste nicht zurück auf "immer sichtbar" stellen
-- `-RemoveFiles`: auch `%LOCALAPPDATA%\TaskbarAutoHide` löschen (aus dem Repo-Ordner starten)
+- `-KeepAutoHide`: do not set the taskbar back to "always visible"
+- `-RemoveFiles`: also delete `%LOCALAPPDATA%\TaskbarAutoHide` (run it from the repo folder)
 
-## Fehlersuche
+## Troubleshooting
 
-**`Install.ps1` wird nicht gefunden.**
-Du bist im falschen Ordner. Nach dem Entpacken liegt die Datei oft eine Ebene tiefer. Mit `Get-ChildItem -Path $env:USERPROFILE -Recurse -Filter Install.ps1 -ErrorAction SilentlyContinue | Select-Object FullName` findest du sie.
+**`Install.ps1` is not found.**
+You are in the wrong folder. After extracting, the file is often one level deeper. `Get-ChildItem -Path $env:USERPROFILE -Recurse -Filter Install.ps1 -ErrorAction SilentlyContinue | Select-Object FullName` finds it.
 
-**Nach Abmelden oder Neustart funktioniert es nicht mehr.**
-Seit Version 1.0.1 startet das Script über die geplante Aufgabe und zusätzlich über den Run-Key. Mit einer älteren Version `Install.ps1` einfach erneut ausführen. Prüfen kannst du es mit `Get-ScheduledTask -TaskName TaskbarAutoHide | Get-ScheduledTaskInfo` (`LastRunTime` sollte der letzte Login sein) und `Start-ScheduledTask -TaskName TaskbarAutoHide` startet es von Hand.
+**It stops working after sign-out or reboot.**
+Since version 1.0.1 the script starts via the scheduled task and additionally via the Run key. On an older version, just run `Install.ps1` again. Check with `Get-ScheduledTask -TaskName TaskbarAutoHide | Get-ScheduledTaskInfo` (`LastRunTime` should be your last sign-in); `Start-ScheduledTask -TaskName TaskbarAutoHide` starts it by hand.
 
-**Nach der Installation bleibt die Taskleiste sichtbar.**
-`-Status` ausführen. Steht dort `Gilt als angedockt: True`, aber `Auto-Hide aktuell: False`, läuft der Hintergrundprozess nicht. Dann `Start-ScheduledTask -TaskName TaskbarAutoHide` und ins Log schauen.
+**The taskbar stays visible after installing.**
+Run `-Status`. If it says `Gilt als angedockt: True` but `Auto-Hide aktuell: False`, the background process is not running. Run `Start-ScheduledTask -TaskName TaskbarAutoHide` and check the log.
 
-**Es werden 0 externe Monitore erkannt, obwohl einer dran ist.**
-Prüfen, ob `Get-CimInstance -Namespace root\wmi -ClassName WmiMonitorConnectionParams` Werte liefert. Wenn nicht, greift der Fallback (Bildschirmanzahl minus 1).
+**0 external monitors detected although one is connected.**
+Check whether `Get-CimInstance -Namespace root\wmi -ClassName WmiMonitorConnectionParams` returns values. If not, the fallback (screen count minus one) applies.
 
-**Taskleiste verschwindet auch ohne externen Monitor.**
-Im Modus `monitors` prüfen, ob Windows einen "virtuellen" Bildschirm meldet (z.B. Remote-Sitzung, virtuelle Display-Treiber). `-Status` zeigt die Anzahl.
+**The taskbar hides even without an external monitor.**
+In `monitors` mode, check whether Windows reports a "virtual" display (e.g. remote session, virtual display drivers). `-Status` shows the count.
 
-**Dock wird nicht erkannt.**
-`Find-Dock.ps1` nochmal durchlaufen und ein spezifischeres Muster wählen. Wildcards (`*`) davor und danach nicht vergessen.
+**The dock is not detected.**
+Run `Find-Dock.ps1` again and choose a more specific pattern. Don't forget wildcards (`*`) before and after.
 
-**Fehlermeldung wegen ExecutionPolicy.**
-Immer mit `-ExecutionPolicy Bypass` aufrufen, wie oben gezeigt. Erzwingt eine Gruppenrichtlinie (AppLocker, Constrained Language Mode) etwas anderes, funktioniert das Script dort nicht.
+**ExecutionPolicy error.**
+Always call with `-ExecutionPolicy Bypass` as shown above. If a group policy (AppLocker, Constrained Language Mode) enforces otherwise, the script will not work there.
 
-**Kurzes Fenster-Aufblitzen beim Anmelden.**
-Normal beim Start des versteckten PowerShell-Prozesses. Es verschwindet sofort.
+**A window flashes briefly at sign-in.**
+Normal when the hidden PowerShell process starts. It disappears immediately.
 
-## Was verändert das Script auf dem System?
+## What does the script change on the system?
 
-Transparent und überschaubar, alles im Benutzerkontext:
+Transparent and small, all in user context:
 
-- schaltet die Taskleisten-Einstellung "automatisch ausblenden" um (über die Windows-API, wie die Einstellungen selbst)
-- legt Dateien in `%LOCALAPPDATA%\TaskbarAutoHide` ab (Script, `config.json`, Log)
-- legt eine geplante Aufgabe `TaskbarAutoHide` und einen Run-Key-Eintrag `TaskbarAutoHide` unter `HKCU` an
-- liest Monitor- und Geräteinformationen über WMI bzw. `Get-PnpDevice`
-- **keine** Netzwerkverbindungen, **keine** Admin-Rechte, **keine** Änderungen an Systemeinstellungen oder Richtlinien
+- toggles the taskbar "auto-hide" setting (through the Windows API, like Settings itself)
+- stores files in `%LOCALAPPDATA%\TaskbarAutoHide` (script, `config.json`, log)
+- creates a scheduled task `TaskbarAutoHide` and a Run-key entry `TaskbarAutoHide` under `HKCU`
+- reads monitor and device information via WMI / `Get-PnpDevice`
+- **no** network connections, **no** admin rights, **no** changes to system settings or policies
 
-`Uninstall.ps1` entfernt alles wieder. Der Quellcode ist kurz genug, um ihn vor der Installation selbst durchzulesen.
+`Uninstall.ps1` removes everything again. The source is short enough to read before installing.
 
-## Hinweise und Grenzen
+## Notes and limits
 
-- Auto-Hide gilt für alle Taskleisten. Pro Bildschirm getrennt geht es in Windows nicht.
-- Läuft nur, solange du angemeldet bist (Benutzerkontext).
-- Auf Firmen-PCs vorher prüfen, ob Scripts und geplante Aufgaben erlaubt sind und ob die Taskleisten-Einstellung per Richtlinie gesperrt ist.
-- Getestet: Modus `monitors` unter Windows 11 mit zwei externen Monitoren (Ausblenden bestätigt). Der Dock-Modus (`dock`, `either`) ist bisher nicht auf echter Hardware geprüft.
+- Auto-hide applies to all taskbars. Per-monitor behavior is not possible in Windows.
+- Runs only while you are signed in (user context).
+- On managed PCs, check beforehand whether scripts and scheduled tasks are allowed and whether the taskbar setting is locked by policy.
+- Tested: `monitors` mode on Windows 11 with two external monitors (hiding confirmed). Dock mode (`dock`, `either`) has not been verified on real hardware yet.
 
-## Dateien
+## Files
 
-| Datei | Zweck |
+| File | Purpose |
 |---|---|
-| `TaskbarAutoHide.ps1` | Hauptscript (Dauerbetrieb, `-Status`, `-Force`, `-Once`) |
-| `Install.ps1` | Installation inkl. Autostart |
-| `Uninstall.ps1` | Entfernt alles wieder |
-| `Find-Dock.ps1` | Findet ein Erkennungsmuster für die Dockingstation |
-| `config.json` | Standardkonfiguration |
-| `README.en.md` | English documentation |
-| `CHANGELOG.md` | Änderungen pro Version |
-| `LICENSE` | MIT-Lizenz |
+| `TaskbarAutoHide.ps1` | Main script (continuous mode, `-Status`, `-Force`, `-Once`) |
+| `Install.ps1` | Installation incl. autostart |
+| `Uninstall.ps1` | Removes everything |
+| `Find-Dock.ps1` | Finds a detection pattern for the docking station |
+| `config.json` | Default configuration |
+| `README.de.md` | German documentation |
+| `CHANGELOG.md` | Changes per version |
+| `LICENSE` | MIT license |
 
-## Lizenz
+## License
 
-MIT, siehe [LICENSE](LICENSE).
+MIT, see [LICENSE](LICENSE).
