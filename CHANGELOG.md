@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.0.1] - 2026-11-04
+
+### Behoben
+- Das Script startete nach Abmelden/Neustart nicht mehr zuverlässig, weil die geplante Aufgabe beim Login nicht anlief. `Install.ps1` trägt jetzt zusätzlich einen Autostart im Run-Key ein (doppelter Start ist durch den Mutex harmlos), `Uninstall.ps1` entfernt ihn wieder.
+
 Alle wichtigen Änderungen an diesem Projekt. Format angelehnt an [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
 ## [1.0.0] - 2026-11-03

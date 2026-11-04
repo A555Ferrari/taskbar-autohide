@@ -33,6 +33,13 @@ if (Test-Path $lnk) {
     Write-Host 'Autostart-Verknuepfung entfernt.'
 }
 
+# Run-Key-Eintrag
+$runKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
+if (Get-ItemProperty -Path $runKey -Name $taskName -ErrorAction SilentlyContinue) {
+    Remove-ItemProperty -Path $runKey -Name $taskName
+    Write-Host 'Run-Key-Eintrag entfernt.'
+}
+
 # Laufende Instanz beenden
 Get-CimInstance Win32_Process -Filter "Name = 'powershell.exe'" |
     Where-Object { $_.CommandLine -like '*TaskbarAutoHide.ps1*' -and $_.ProcessId -ne $PID } |

@@ -78,6 +78,17 @@ try {
     Write-Host 'Autostart-Verknuepfung angelegt und Script gestartet.'
 }
 
+# Zusaetzliche Absicherung: Autostart ueber den Run-Key des Benutzers.
+# Falls die geplante Aufgabe beim Login nicht startet (z.B. durch Richtlinien), greift dieser Weg.
+# Doppelter Start ist unkritisch, das Script erlaubt nur eine Instanz (Mutex).
+try {
+    $runKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
+    Set-ItemProperty -Path $runKey -Name $taskName -Value "powershell.exe $psArgs"
+    Write-Host 'Zusaetzlicher Autostart (Run-Key) eingetragen.'
+} catch {
+    Write-Warning "Run-Key nicht moeglich: $($_.Exception.Message)"
+}
+
 Start-Sleep -Seconds 2
 Write-Host ''
 Write-Host 'Aktueller Status:'
