@@ -40,6 +40,17 @@ if (Get-ItemProperty -Path $runKey -Name $taskName -ErrorAction SilentlyContinue
     Write-Host 'Run-Key-Eintrag entfernt.'
 }
 
+# Befehl 'tah': Installationsordner aus dem Benutzer-PATH entfernen
+try {
+    $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
+    $parts = @($userPath -split ';' | Where-Object { $_ })
+    $kept = @($parts | Where-Object { $_ -ine $target })
+    if ($kept.Count -ne $parts.Count) {
+        [Environment]::SetEnvironmentVariable('Path', ($kept -join ';'), 'User')
+        Write-Host "PATH-Eintrag fuer 'tah' entfernt."
+    }
+} catch { }
+
 # Startmenue-Eintrag zum Aktualisieren
 $updateLnk = Join-Path ([Environment]::GetFolderPath('Programs')) 'TaskbarAutoHide aktualisieren.lnk'
 if (Test-Path $updateLnk) {

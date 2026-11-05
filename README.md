@@ -2,7 +2,7 @@
 
 ![Windows 10/11](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?logo=windows&logoColor=white)
 ![PowerShell 5.1+](https://img.shields.io/badge/PowerShell-5.1%2B-5391FE?logo=powershell&logoColor=white)
-![Version 1.0.3](https://img.shields.io/badge/Version-1.0.3-blue)
+![Version 1.0.4](https://img.shields.io/badge/Version-1.0.4-blue)
 ![License MIT](https://img.shields.io/badge/License-MIT-green)
 
 **English** | [Deutsch](README.de.md)
@@ -25,45 +25,35 @@ Why PowerShell instead of AutoHotkey? It runs on any Windows 10/11 without insta
 
 ## Quick start
 
-New to this? A step-by-step guide for beginners (in German) is in [INSTALL.de.md](INSTALL.de.md).
-
-**Fastest: install and update with one command.** Open PowerShell, paste, press Enter:
+**One command to install and to update.** Open PowerShell (Start → type "PowerShell" → Enter), paste, press Enter:
 
 ```powershell
 irm https://raw.githubusercontent.com/A555Ferrari/taskbar-autohide/main/Update.ps1 | iex
 ```
 
-This downloads the latest version from GitHub, installs it and cleans up. Your `config.json` is kept. Update later the same way or via the Start menu entry **TaskbarAutoHide aktualisieren**. It only runs when you start it, never automatically. You can read [Update.ps1](Update.ps1) first. If a company policy blocks the command, use the ZIP variant:
+That's it. The command downloads the latest version from GitHub, installs it to a **fixed location** (nothing to choose, download or extract), starts the script and sets up autostart. No reboot and no admin rights needed. At the end it prints the status; with external monitors connected it shows `Auto-Hide aktuell: True` (the status output is in German).
 
-1. Download the repo as a ZIP and **extract it into its own folder**. Note: extracting often creates a folder inside a folder. Change into the inner one, where `Install.ps1` sits directly.
-2. Open PowerShell and go there:
+It only runs when you start it, never automatically. You can read [Update.ps1](Update.ps1) first. If a company policy blocks the command, [INSTALL.de.md](INSTALL.de.md) has a ZIP alternative (German).
 
-   ```powershell
-   cd "C:\Users\YOUR_NAME\Downloads\taskbar-autohide\taskbar-autohide"
-   ```
+### Where is what?
 
-3. Install:
+| What | Where |
+|---|---|
+| Program, configuration, log | `%LOCALAPPDATA%\TaskbarAutoHide` (i.e. `C:\Users\<name>\AppData\Local\TaskbarAutoHide`) |
+| Configuration | `config.json` in that folder, open with `tah config` |
+| Log | `TaskbarAutoHide.log` in that folder, show with `tah log` |
+| Autostart | Task Scheduler task `TaskbarAutoHide` and Run key `TaskbarAutoHide` |
+| Update | Start menu → **TaskbarAutoHide aktualisieren** or `tah update` |
 
-   ```powershell
-   powershell -ExecutionPolicy Bypass -File .\Install.ps1
-   ```
-
-That's it. The installer starts the script immediately and again at every sign-in. No reboot needed. At the end it prints the current status; with external monitors connected it should show `Auto-Hide aktuell: True` (the status output is in German).
-
-What `Install.ps1` does:
+### What does the installation do?
 
 - copies the files to `%LOCALAPPDATA%\TaskbarAutoHide` (an existing `config.json` is kept)
 - unblocks the files (`Unblock-File`), because Windows may block downloaded scripts
-- creates a scheduled task `TaskbarAutoHide` with two triggers (at sign-in, and every 5 minutes as a watchdog that restarts the script if it is no longer running) and starts it
-- additionally sets an autostart entry in the user's Run key that starts the task (starting twice is harmless, only one instance ever runs)
-- creates a Start menu entry **TaskbarAutoHide aktualisieren** ("update") that runs `Update.ps1`
+- creates a scheduled task `TaskbarAutoHide`, a Run-key entry `TaskbarAutoHide` under `HKCU` and a Start menu entry for updating, and adds the install folder to your user PATH (for the `tah` command)
+- sets an autostart entry in the user's Run key that starts the task (starting twice is harmless, only one instance ever runs)
+- creates a Start menu entry **TaskbarAutoHide aktualisieren** ("update")
+- sets up the `tah` command (install folder added to your user PATH, available in new terminals)
 - if scheduled tasks are not allowed: falls back to a shortcut in the Startup folder
-
-Set the mode right at install time:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\Install.ps1 -Mode either
-```
 
 ## How it works
 
@@ -119,58 +109,56 @@ The output lists all devices that only appeared with the dock. Pick a unique nam
 }
 ```
 
-## Testing and status
+## Commands
 
-```powershell
-$s = "$env:LOCALAPPDATA\TaskbarAutoHide\TaskbarAutoHide.ps1"
+After installing there is the `tah` command. It works in a **new** terminal (close and reopen a window that was already open).
 
-& $s -Status        # mode, detected monitors, dock, current state
-& $s -Force Hide    # force auto-hide once
-& $s -Force Show    # show the taskbar permanently once
-& $s -Once          # check and apply once, then exit
-```
+| Command | What it does |
+|---|---|
+| `tah status` | version, is the script running?, detected monitors, current state |
+| `tah update` | install the latest version from GitHub |
+| `tah log` | last lines of the log |
+| `tah config` | open `config.json` in an editor |
+| `tah start` / `tah restart` | start / restart the script |
+| `tah stop` | stop the script (the watchdog restarts it within 5 minutes; to remove it for good use `tah uninstall`) |
+| `tah version` | show the installed version |
+| `tah uninstall` | remove everything |
+| `tah help` | command overview |
 
-Start the process manually:
-
-```powershell
-Start-ScheduledTask -TaskName TaskbarAutoHide
-```
-
-Log: `%LOCALAPPDATA%\TaskbarAutoHide\TaskbarAutoHide.log` (written on state changes, trimmed automatically at 200 KB).
+The log is written on state changes and trimmed automatically at 200 KB. To test hiding you can also run `& "$env:LOCALAPPDATA\TaskbarAutoHide\TaskbarAutoHide.ps1" -Force Hide` or `-Force Show`.
 
 ## Uninstall
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\Uninstall.ps1
+tah uninstall
 ```
 
-This removes the scheduled task, the Run-key entry and the Startup shortcut, stops the process and sets the taskbar back to "always visible". Options:
-
-- `-KeepAutoHide`: do not set the taskbar back to "always visible"
-- `-RemoveFiles`: also delete `%LOCALAPPDATA%\TaskbarAutoHide` (run it from the repo folder)
+After a confirmation prompt this removes the scheduled task, the Run-key entry, the Start menu entry, the PATH entry and the install folder, stops the process and sets the taskbar back to "always visible".
 
 ## Troubleshooting
 
-**`Install.ps1` is not found.**
-You are in the wrong folder. After extracting, the file is often one level deeper. `Get-ChildItem -Path $env:USERPROFILE -Recurse -Filter Install.ps1 -ErrorAction SilentlyContinue | Select-Object FullName` finds it.
+Always start with `tah status` and `tah log`. The output helps with any question.
 
-**It stops working after sign-out or reboot.**
-Since version 1.0.2 the scheduled task checks every 5 minutes whether the script is running and restarts it if not (on top of the sign-in trigger and the Run key), so after a sign-out, hibernation or reboot it can take up to 5 minutes until it is back. On an older version, just run `Install.ps1` again. Check with `Get-ScheduledTask -TaskName TaskbarAutoHide | Get-ScheduledTaskInfo` (`LastRunTime` should be your last sign-in); `Start-ScheduledTask -TaskName TaskbarAutoHide` starts it by hand.
+**The taskbar no longer switches.**
+If `Script laeuft` says **NEIN**, the background process is not running. `tah start` starts it. Since version 1.0.2 the scheduled task checks every 5 minutes and restarts it on its own. On an older version, run the one-liner from the quick start again.
 
-**The taskbar stays visible after installing.**
-Run `-Status`. If it says `Gilt als angedockt: True` but `Auto-Hide aktuell: False`, the background process is not running. Run `Start-ScheduledTask -TaskName TaskbarAutoHide` and check the log.
+**`tah` is not found.**
+Open a new terminal; the PATH entry only applies to windows started after the installation. It always works with `& "$env:LOCALAPPDATA\TaskbarAutoHide\tah.cmd" status`.
+
+**The one-liner is blocked or fails with an error.**
+Usually a company policy or proxy. Use the ZIP variant in [INSTALL.de.md](INSTALL.de.md) (German).
+
+**The taskbar slides out by itself.**
+Usually an app is flashing (e.g. Teams on a new message), which Windows signals this way. In Windows Settings under Personalization → Taskbar → Taskbar behaviors you can turn off flashing for taskbar apps.
 
 **0 external monitors detected although one is connected.**
 Check whether `Get-CimInstance -Namespace root\wmi -ClassName WmiMonitorConnectionParams` returns values. If not, the fallback (screen count minus one) applies.
 
 **The taskbar hides even without an external monitor.**
-In `monitors` mode, check whether Windows reports a "virtual" display (e.g. remote session, virtual display drivers). `-Status` shows the count.
+In `monitors` mode, check whether Windows reports a "virtual" display (e.g. remote session, virtual display drivers). `tah status` shows the count.
 
 **The dock is not detected.**
 Run `Find-Dock.ps1` again and choose a more specific pattern. Don't forget wildcards (`*`) before and after.
-
-**ExecutionPolicy error.**
-Always call with `-ExecutionPolicy Bypass` as shown above. If a group policy (AppLocker, Constrained Language Mode) enforces otherwise, the script will not work there.
 
 **A window flashes briefly at sign-in.**
 Normal when the hidden PowerShell process starts. It disappears immediately.
@@ -181,7 +169,7 @@ Transparent and small, all in user context:
 
 - toggles the taskbar "auto-hide" setting (through the Windows API, like Settings itself)
 - stores files in `%LOCALAPPDATA%\TaskbarAutoHide` (script, `config.json`, log)
-- creates a scheduled task `TaskbarAutoHide` a Run-key entry `TaskbarAutoHide` under `HKCU` and a Start menu entry for updating
+- creates a scheduled task `TaskbarAutoHide`, a Run-key entry `TaskbarAutoHide` under `HKCU` and a Start menu entry for updating, and adds the install folder to your user PATH (for the `tah` command)
 - reads monitor and device information via WMI / `Get-PnpDevice`
 - **no** network connections while running (only `Update.ps1` connects to github.com when you start it), **no** admin rights, **no** changes to system settings or policies
 
@@ -203,6 +191,7 @@ Transparent and small, all in user context:
 | `Uninstall.ps1` | Removes everything |
 | `Find-Dock.ps1` | Finds a detection pattern for the docking station |
 | `Update.ps1` | Downloads the latest version from GitHub and installs it |
+| `Manage.ps1`, `tah.cmd` | The `tah` command (status, update, log, ...) |
 | `config.json` | Default configuration |
 | `README.de.md` | German documentation |
 | `INSTALL.de.md` | Step-by-step install guide for beginners (German) |

@@ -27,7 +27,7 @@ Get-ChildItem -Path $PSScriptRoot -File | Unblock-File -ErrorAction SilentlyCont
 Write-Host "Installiere nach $target ..."
 New-Item -ItemType Directory -Path $target -Force | Out-Null
 
-foreach ($f in 'TaskbarAutoHide.ps1', 'Find-Dock.ps1', 'Uninstall.ps1', 'Update.ps1', 'VERSION') {
+foreach ($f in 'TaskbarAutoHide.ps1', 'Find-Dock.ps1', 'Uninstall.ps1', 'Update.ps1', 'Manage.ps1', 'tah.cmd', 'VERSION') {
     Copy-Item -Path (Join-Path $PSScriptRoot $f) -Destination $target -Force
 }
 $cfgTarget = Join-Path $target 'config.json'
@@ -98,6 +98,18 @@ try {
     Write-Warning "Run-Key nicht moeglich: $($_.Exception.Message)"
 }
 
+# Befehl 'tah' bereitstellen: Installationsordner zum Benutzer-PATH hinzufuegen (nur fuer dein Konto).
+try {
+    $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
+    $parts = @($userPath -split ';' | Where-Object { $_ })
+    if ($parts -notcontains $target) {
+        [Environment]::SetEnvironmentVariable('Path', (($parts + $target) -join ';'), 'User')
+    }
+    Write-Host "Befehl 'tah' eingerichtet (in einem NEUEN Terminal verfuegbar)."
+} catch {
+    Write-Warning "Befehl 'tah' nicht moeglich: $($_.Exception.Message)"
+}
+
 # Startmenue-Eintrag zum Aktualisieren (laeuft nur, wenn du ihn anklickst, nie automatisch).
 try {
     $updateLnk = Join-Path ([Environment]::GetFolderPath('Programs')) 'TaskbarAutoHide aktualisieren.lnk'
@@ -118,5 +130,8 @@ Write-Host ''
 Write-Host 'Aktueller Status:'
 & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $script -Status
 Write-Host ''
-Write-Host "Fertig. Konfiguration: $cfgTarget"
+Write-Host "Fertig. Installiert in: $target"
+Write-Host "Konfiguration:  $cfgTarget"
 Write-Host "Log:            $(Join-Path $target 'TaskbarAutoHide.log')"
+Write-Host ''
+Write-Host 'Befehle (in einem NEUEN Terminal):  tah status | tah update | tah log | tah config | tah help'

@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.4] - 2026-11-05
+
+### Hinzugefügt
+- Befehl `tah` (`tah status`, `tah update`, `tah log`, `tah config`, `tah start`, `tah restart`, `tah stop`, `tah version`, `tah uninstall`, `tah help`). Die Installation trägt den Ordner im Benutzer-PATH ein, in einem neuen Terminal ist `tah` verfügbar.
+- Feste Pfade und eine einzige empfohlene Installationsmethode (der Einzeiler). README und `INSTALL.de.md` überarbeitet, mit Übersicht "Wo liegt was?".
+
 ## [1.0.3] - 2026-11-05
 
 ### Hinzugefügt
