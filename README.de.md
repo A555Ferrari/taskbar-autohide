@@ -38,6 +38,8 @@ Warum PowerShell statt AutoHotkey? Es läuft auf jedem Windows 10/11 ohne Instal
 
 ## Schnellstart
 
+Neu dabei? Die ausführliche Schritt-für-Schritt-Anleitung für Einsteiger steht in [INSTALL.de.md](INSTALL.de.md).
+
 1. Repo als ZIP herunterladen und **in einen eigenen Ordner entpacken**. Achtung: Beim Entpacken entsteht oft ein Ordner im Ordner. Du musst in den inneren wechseln, in dem `Install.ps1` direkt liegt.
 2. PowerShell öffnen und dorthin wechseln:
 
@@ -206,6 +208,7 @@ Transparent und überschaubar, alles im Benutzerkontext:
 | `Find-Dock.ps1` | Findet ein Erkennungsmuster für die Dockingstation |
 | `config.json` | Standardkonfiguration |
 | `README.md` | English documentation |
+| `INSTALL.de.md` | Schritt-für-Schritt-Anleitung für Einsteiger |
 | `CHANGELOG.md` | Änderungen pro Version |
 | `LICENSE` | MIT-Lizenz |
 

@@ -25,6 +25,8 @@ Why PowerShell instead of AutoHotkey? It runs on any Windows 10/11 without insta
 
 ## Quick start
 
+New to this? A step-by-step guide for beginners (in German) is in [INSTALL.de.md](INSTALL.de.md).
+
 1. Download the repo as a ZIP and **extract it into its own folder**. Note: extracting often creates a folder inside a folder. Change into the inner one, where `Install.ps1` sits directly.
 2. Open PowerShell and go there:
 
@@ -193,6 +195,7 @@ Transparent and small, all in user context:
 | `Find-Dock.ps1` | Finds a detection pattern for the docking station |
 | `config.json` | Default configuration |
 | `README.de.md` | German documentation |
+| `INSTALL.de.md` | Step-by-step install guide for beginners (German) |
 | `CHANGELOG.md` | Changes per version |
 | `LICENSE` | MIT license |
 
