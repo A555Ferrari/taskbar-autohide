@@ -27,7 +27,7 @@ Get-ChildItem -Path $PSScriptRoot -File | Unblock-File -ErrorAction SilentlyCont
 Write-Host "Installiere nach $target ..."
 New-Item -ItemType Directory -Path $target -Force | Out-Null
 
-foreach ($f in 'TaskbarAutoHide.ps1', 'Find-Dock.ps1', 'Uninstall.ps1') {
+foreach ($f in 'TaskbarAutoHide.ps1', 'Find-Dock.ps1', 'Uninstall.ps1', 'Update.ps1', 'VERSION') {
     Copy-Item -Path (Join-Path $PSScriptRoot $f) -Destination $target -Force
 }
 $cfgTarget = Join-Path $target 'config.json'
@@ -96,6 +96,21 @@ try {
     Write-Host 'Zusaetzlicher Autostart (Run-Key) eingetragen.'
 } catch {
     Write-Warning "Run-Key nicht moeglich: $($_.Exception.Message)"
+}
+
+# Startmenue-Eintrag zum Aktualisieren (laeuft nur, wenn du ihn anklickst, nie automatisch).
+try {
+    $updateLnk = Join-Path ([Environment]::GetFolderPath('Programs')) 'TaskbarAutoHide aktualisieren.lnk'
+    $sh = New-Object -ComObject WScript.Shell
+    $lnk2 = $sh.CreateShortcut($updateLnk)
+    $lnk2.TargetPath = 'powershell.exe'
+    $lnk2.Arguments = "-NoProfile -ExecutionPolicy Bypass -NoExit -File `"$(Join-Path $target 'Update.ps1')`""
+    $lnk2.WorkingDirectory = $target
+    $lnk2.Description = 'TaskbarAutoHide auf die neueste Version von GitHub aktualisieren'
+    $lnk2.Save()
+    Write-Host "Startmenue-Eintrag 'TaskbarAutoHide aktualisieren' angelegt."
+} catch {
+    Write-Warning "Startmenue-Eintrag nicht moeglich: $($_.Exception.Message)"
 }
 
 Start-Sleep -Seconds 2

@@ -2,14 +2,14 @@
 
 ![Windows 10/11](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?logo=windows&logoColor=white)
 ![PowerShell 5.1+](https://img.shields.io/badge/PowerShell-5.1%2B-5391FE?logo=powershell&logoColor=white)
-![Version 1.0.2](https://img.shields.io/badge/Version-1.0.2-blue)
+![Version 1.0.3](https://img.shields.io/badge/Version-1.0.3-blue)
 ![License MIT](https://img.shields.io/badge/License-MIT-green)
 
 **English** | [Deutsch](README.de.md)
 
 Automatically hides the Windows taskbar when external monitors (or a docking station) are connected. On the laptop display alone, the taskbar stays visible.
 
-No extra software, no admin rights, just PowerShell. No network access, no telemetry.
+No extra software, no admin rights, just PowerShell. No network access while running (only `Update.ps1` connects to GitHub when you start it), no telemetry.
 
 ## Why?
 
@@ -26,6 +26,14 @@ Why PowerShell instead of AutoHotkey? It runs on any Windows 10/11 without insta
 ## Quick start
 
 New to this? A step-by-step guide for beginners (in German) is in [INSTALL.de.md](INSTALL.de.md).
+
+**Fastest: install and update with one command.** Open PowerShell, paste, press Enter:
+
+```powershell
+irm https://raw.githubusercontent.com/A555Ferrari/taskbar-autohide/main/Update.ps1 | iex
+```
+
+This downloads the latest version from GitHub, installs it and cleans up. Your `config.json` is kept. Update later the same way or via the Start menu entry **TaskbarAutoHide aktualisieren**. It only runs when you start it, never automatically. You can read [Update.ps1](Update.ps1) first. If a company policy blocks the command, use the ZIP variant:
 
 1. Download the repo as a ZIP and **extract it into its own folder**. Note: extracting often creates a folder inside a folder. Change into the inner one, where `Install.ps1` sits directly.
 2. Open PowerShell and go there:
@@ -48,6 +56,7 @@ What `Install.ps1` does:
 - unblocks the files (`Unblock-File`), because Windows may block downloaded scripts
 - creates a scheduled task `TaskbarAutoHide` with two triggers (at sign-in, and every 5 minutes as a watchdog that restarts the script if it is no longer running) and starts it
 - additionally sets an autostart entry in the user's Run key that starts the task (starting twice is harmless, only one instance ever runs)
+- creates a Start menu entry **TaskbarAutoHide aktualisieren** ("update") that runs `Update.ps1`
 - if scheduled tasks are not allowed: falls back to a shortcut in the Startup folder
 
 Set the mode right at install time:
@@ -172,9 +181,9 @@ Transparent and small, all in user context:
 
 - toggles the taskbar "auto-hide" setting (through the Windows API, like Settings itself)
 - stores files in `%LOCALAPPDATA%\TaskbarAutoHide` (script, `config.json`, log)
-- creates a scheduled task `TaskbarAutoHide` and a Run-key entry `TaskbarAutoHide` under `HKCU`
+- creates a scheduled task `TaskbarAutoHide` a Run-key entry `TaskbarAutoHide` under `HKCU` and a Start menu entry for updating
 - reads monitor and device information via WMI / `Get-PnpDevice`
-- **no** network connections, **no** admin rights, **no** changes to system settings or policies
+- **no** network connections while running (only `Update.ps1` connects to github.com when you start it), **no** admin rights, **no** changes to system settings or policies
 
 `Uninstall.ps1` removes everything again. The source is short enough to read before installing.
 
@@ -193,6 +202,7 @@ Transparent and small, all in user context:
 | `Install.ps1` | Installation incl. autostart |
 | `Uninstall.ps1` | Removes everything |
 | `Find-Dock.ps1` | Finds a detection pattern for the docking station |
+| `Update.ps1` | Downloads the latest version from GitHub and installs it |
 | `config.json` | Default configuration |
 | `README.de.md` | German documentation |
 | `INSTALL.de.md` | Step-by-step install guide for beginners (German) |

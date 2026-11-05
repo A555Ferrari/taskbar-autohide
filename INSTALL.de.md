@@ -6,6 +6,18 @@ Das Tool blendet die Taskleiste automatisch aus, sobald ein externer Monitor ode
 
 ## Installieren
 
+### Variante A: ein Befehl (am einfachsten)
+
+PowerShell öffnen (Start → "PowerShell" tippen → Enter), diesen Befehl einfügen und Enter drücken:
+
+```powershell
+irm https://raw.githubusercontent.com/A555Ferrari/taskbar-autohide/main/Update.ps1 | iex
+```
+
+Das lädt die neueste Version, installiert sie und räumt wieder auf. Am Ende kommt der Status. Fertig. Blockiert deine Firma den Befehl (Fehlermeldung), nimm Variante B.
+
+### Variante B: ZIP
+
 1. **ZIP herunterladen:** [taskbar-autohide-main.zip](https://github.com/A555Ferrari/taskbar-autohide/archive/refs/heads/main.zip). Dafür brauchst du kein GitHub-Konto.
 2. **Entpacken:** Im Downloads-Ordner Rechtsklick auf die ZIP-Datei → **Alle extrahieren** → **Extrahieren**.
 3. **In den inneren Ordner gehen:** Windows legt oft einen Ordner im Ordner an. Öffne die Ordner, bis du die Datei `Install.ps1` siehst.
@@ -29,7 +41,9 @@ Steck den externen Monitor oder die Dockingstation ab und wieder an. Nach höchs
 
 ## Aktualisieren
 
-Neue ZIP herunterladen und die Schritte 2 bis 5 wiederholen. Deine Einstellungen bleiben erhalten.
+Einfach im **Startmenü** auf **TaskbarAutoHide aktualisieren** klicken. Oder den Befehl aus Variante A nochmal ausführen. Deine Einstellungen bleiben erhalten.
+
+Ohne den Startmenü-Eintrag (ältere Installation) hilft einmalig Variante A oder B.
 
 ## Wenn etwas nicht klappt
 
@@ -55,7 +69,7 @@ Meistens blinkt eine App (zum Beispiel Teams bei einer neuen Nachricht). Das zei
 Get-Content "$env:LOCALAPPDATA\TaskbarAutoHide\TaskbarAutoHide.log" -Tail 10
 ```
 
-Schick diese Ausgabe mit, wenn du Hilfe brauchst.
+Im Status siehst du auch die installierte **Version** und ob das Script **läuft** ("Script laeuft: Ja"). Schick diese Ausgabe mit, wenn du Hilfe brauchst.
 
 **Dockingstation ohne Monitor soll auch zählen**
 Das geht über `dockMatch` in der `config.json`, siehe [README.de.md](README.de.md#dockingstation-einrichten).

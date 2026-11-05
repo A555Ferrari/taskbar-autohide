@@ -40,6 +40,13 @@ if (Get-ItemProperty -Path $runKey -Name $taskName -ErrorAction SilentlyContinue
     Write-Host 'Run-Key-Eintrag entfernt.'
 }
 
+# Startmenue-Eintrag zum Aktualisieren
+$updateLnk = Join-Path ([Environment]::GetFolderPath('Programs')) 'TaskbarAutoHide aktualisieren.lnk'
+if (Test-Path $updateLnk) {
+    Remove-Item $updateLnk -Force
+    Write-Host 'Startmenue-Eintrag entfernt.'
+}
+
 # Laufende Instanz beenden
 Get-CimInstance Win32_Process -Filter "Name = 'powershell.exe'" |
     Where-Object { $_.CommandLine -like '*TaskbarAutoHide.ps1*' -and $_.ProcessId -ne $PID } |

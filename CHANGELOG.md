@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.3] - 2026-11-05
+
+### Hinzugefügt
+- `Update.ps1`: lädt die neueste Version von GitHub und installiert sie in einem Schritt. Aufruf mit `irm https://raw.githubusercontent.com/A555Ferrari/taskbar-autohide/main/Update.ps1 | iex` oder über den neuen Startmenü-Eintrag "TaskbarAutoHide aktualisieren". Läuft nur auf Befehl, nie automatisch.
+- `-Status` zeigt jetzt die installierte Version und ob das Script wirklich läuft (vorher sah man einen toten Prozess nicht).
+- Datei `VERSION`.
+
 ## [1.0.2] - 2026-11-05
 
 ### Behoben

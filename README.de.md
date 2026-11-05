@@ -2,14 +2,14 @@
 
 ![Windows 10/11](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?logo=windows&logoColor=white)
 ![PowerShell 5.1+](https://img.shields.io/badge/PowerShell-5.1%2B-5391FE?logo=powershell&logoColor=white)
-![Version 1.0.2](https://img.shields.io/badge/Version-1.0.2-blue)
+![Version 1.0.3](https://img.shields.io/badge/Version-1.0.3-blue)
 ![Lizenz MIT](https://img.shields.io/badge/Lizenz-MIT-green)
 
 [English](README.md) | **Deutsch**
 
 Blendet die Windows-Taskleiste automatisch aus, sobald externe Bildschirme (oder eine Dockingstation) angeschlossen sind. Nur am Laptop-Display bleibt sie dauerhaft sichtbar.
 
-Ohne Zusatzsoftware, ohne Admin-Rechte, nur PowerShell. Kein Netzwerkzugriff, keine Telemetrie.
+Ohne Zusatzsoftware, ohne Admin-Rechte, nur PowerShell. Kein Netzwerkzugriff im Betrieb (nur `Update.ps1` lädt auf deinen Befehl die neueste Version von GitHub), keine Telemetrie.
 
 ## Inhalt
 
@@ -40,6 +40,14 @@ Warum PowerShell statt AutoHotkey? Es läuft auf jedem Windows 10/11 ohne Instal
 
 Neu dabei? Die ausführliche Schritt-für-Schritt-Anleitung für Einsteiger steht in [INSTALL.de.md](INSTALL.de.md).
 
+**Am schnellsten: installieren und aktualisieren mit einem Befehl.** PowerShell öffnen, einfügen, Enter:
+
+```powershell
+irm https://raw.githubusercontent.com/A555Ferrari/taskbar-autohide/main/Update.ps1 | iex
+```
+
+Das lädt die neueste Version von GitHub, installiert sie und räumt wieder auf. Deine `config.json` bleibt erhalten. Später aktualisierst du genauso oder über den Startmenü-Eintrag **TaskbarAutoHide aktualisieren**. Es läuft nur, wenn du es selbst startest, nie automatisch. Du kannst [Update.ps1](Update.ps1) vorher lesen. Blockiert eine Firmenrichtlinie den Befehl, nimm die ZIP-Variante:
+
 1. Repo als ZIP herunterladen und **in einen eigenen Ordner entpacken**. Achtung: Beim Entpacken entsteht oft ein Ordner im Ordner. Du musst in den inneren wechseln, in dem `Install.ps1` direkt liegt.
 2. PowerShell öffnen und dorthin wechseln:
 
@@ -61,6 +69,7 @@ Was `Install.ps1` genau macht:
 - Dateien entsperren (`Unblock-File`), weil Windows heruntergeladene Scripts sonst blockieren kann
 - geplante Aufgabe `TaskbarAutoHide` mit zwei Auslösern anlegen (bei der Anmeldung und alle 5 Minuten als Wächter, der das Script neu startet, falls es nicht mehr läuft) und starten
 - zusätzlich einen Autostart-Eintrag im Run-Key des Benutzers setzen, der die Aufgabe startet (doppelter Start ist harmlos, es läuft immer nur eine Instanz)
+- einen Startmenü-Eintrag **TaskbarAutoHide aktualisieren** anlegen
 - falls geplante Aufgaben nicht erlaubt sind: Verknüpfung im Autostart-Ordner als Fallback
 
 Den Modus kannst du direkt bei der Installation setzen:
@@ -185,9 +194,9 @@ Transparent und überschaubar, alles im Benutzerkontext:
 
 - schaltet die Taskleisten-Einstellung "automatisch ausblenden" um (über die Windows-API, wie die Einstellungen selbst)
 - legt Dateien in `%LOCALAPPDATA%\TaskbarAutoHide` ab (Script, `config.json`, Log)
-- legt eine geplante Aufgabe `TaskbarAutoHide` und einen Run-Key-Eintrag `TaskbarAutoHide` unter `HKCU` an
+- legt eine geplante Aufgabe `TaskbarAutoHide` einen Run-Key-Eintrag `TaskbarAutoHide` unter `HKCU` und einen Startmenü-Eintrag zum Aktualisieren an
 - liest Monitor- und Geräteinformationen über WMI bzw. `Get-PnpDevice`
-- **keine** Netzwerkverbindungen, **keine** Admin-Rechte, **keine** Änderungen an Systemeinstellungen oder Richtlinien
+- **keine** Netzwerkverbindungen im Betrieb (nur `Update.ps1` verbindet sich auf deinen Befehl mit github.com), **keine** Admin-Rechte, **keine** Änderungen an Systemeinstellungen oder Richtlinien
 
 `Uninstall.ps1` entfernt alles wieder. Der Quellcode ist kurz genug, um ihn vor der Installation selbst durchzulesen.
 
@@ -206,6 +215,7 @@ Transparent und überschaubar, alles im Benutzerkontext:
 | `Install.ps1` | Installation inkl. Autostart |
 | `Uninstall.ps1` | Entfernt alles wieder |
 | `Find-Dock.ps1` | Findet ein Erkennungsmuster für die Dockingstation |
+| `Update.ps1` | Lädt die neueste Version von GitHub und installiert sie |
 | `config.json` | Standardkonfiguration |
 | `README.md` | English documentation |
 | `INSTALL.de.md` | Schritt-für-Schritt-Anleitung für Einsteiger |

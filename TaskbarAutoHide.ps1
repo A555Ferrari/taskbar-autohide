@@ -213,6 +213,13 @@ if ($Force) {
 if ($Status) {
     $cfg = Get-Config
     $state = Get-DockState $cfg
+    $verFile = Join-Path $ScriptDir 'VERSION'
+    $version = if (Test-Path $verFile) { (Get-Content $verFile -Raw).Trim() } else { 'unbekannt' }
+    $mtx = $null
+    $running = [System.Threading.Mutex]::TryOpenExisting('Local\TaskbarAutoHide', [ref]$mtx)
+    if ($mtx) { $mtx.Dispose() }
+    "Version:                $version"
+    "Script laeuft:          $(if ($running) { 'Ja' } else { 'NEIN (starten: Start-ScheduledTask -TaskName TaskbarAutoHide)' })"
     "Modus:                  $($cfg.mode)"
     "Externe Monitore:       $($state.ExternalMonitors) (Schwelle: $($cfg.minExternalMonitors))"
     "Dock-Muster:            $(if ($cfg.dockMatch.Count) { $cfg.dockMatch -join ', ' } else { '(keine)' })"
