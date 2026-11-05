@@ -16,6 +16,9 @@
 .PARAMETER Status
     Zeigt Modus, erkannte Monitore, Dock-Status und aktuellen Auto-Hide-Zustand.
 
+.PARAMETER Background
+    Wird vom Autostart gesetzt: versteckt das Konsolenfenster (auch unter Windows Terminal).
+
 .PARAMETER Force
     Erzwingt Hide oder Show (einmalig), unabhaengig von der Erkennung. Zum Testen.
 
@@ -32,11 +35,31 @@
 param(
     [switch]$Once,
     [switch]$Status,
+    [switch]$Background,
     [ValidateSet('Hide', 'Show')][string]$Force,
     [string]$ConfigPath
 )
 
 $ErrorActionPreference = 'Stop'
+
+# Konsolenfenster verstecken (Autostart). -WindowStyle Hidden reicht unter Windows 11 nicht,
+# wenn Windows Terminal das Standard-Terminal ist: dort bleibt das Fenster sichtbar.
+if ($Background -and -not $Once -and -not $Status -and -not $Force) {
+    try {
+        Add-Type -Namespace TahWin -Name Native -MemberDefinition @'
+[DllImport("kernel32.dll")] public static extern IntPtr GetConsoleWindow();
+[DllImport("user32.dll")] public static extern IntPtr GetAncestor(IntPtr hWnd, uint flags);
+[DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+'@
+        $consoleWnd = [TahWin.Native]::GetConsoleWindow()
+        if ($consoleWnd -ne [IntPtr]::Zero) {
+            # GA_ROOTOWNER = 3: bei Windows Terminal das sichtbare Hauptfenster
+            $rootWnd = [TahWin.Native]::GetAncestor($consoleWnd, 3)
+            if ($rootWnd -ne [IntPtr]::Zero) { [void][TahWin.Native]::ShowWindow($rootWnd, 0) }
+            [void][TahWin.Native]::ShowWindow($consoleWnd, 0)
+        }
+    } catch { }
+}
 
 # $PSScriptRoot ist im param()-Block nicht zuverlaessig gesetzt, daher hier ermitteln.
 $ScriptDir = $PSScriptRoot

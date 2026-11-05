@@ -2,7 +2,7 @@
 
 ![Windows 10/11](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?logo=windows&logoColor=white)
 ![PowerShell 5.1+](https://img.shields.io/badge/PowerShell-5.1%2B-5391FE?logo=powershell&logoColor=white)
-![Version 1.0.4](https://img.shields.io/badge/Version-1.0.4-blue)
+![Version 1.0.5](https://img.shields.io/badge/Version-1.0.5-blue)
 ![Lizenz MIT](https://img.shields.io/badge/Lizenz-MIT-green)
 
 [English](README.md) | **Deutsch**

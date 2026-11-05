@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.0.5] - 2026-11-05
+
+### Behoben
+- Unter Windows 11 mit Windows Terminal als Standard-Terminal blieb beim Start ein sichtbares Konsolenfenster offen. Wurde es geschlossen, beendete sich das Script und der Wächter startete es nach spätestens 5 Minuten wieder ("das Fenster kommt immer wieder"). Jetzt startet die Aufgabe über `conhost.exe --headless` (kein Fenster), die Installation prüft, dass das funktioniert, und das Script versteckt sein Fenster zusätzlich selbst (`-Background`).
+
 ## [1.0.4] - 2026-11-05
 
 ### Hinzugefügt

@@ -43,7 +43,18 @@ if ($Mode) {
 }
 
 $script = Join-Path $target 'TaskbarAutoHide.ps1'
-$psArgs = "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$script`""
+$psArgs = "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$script`" -Background"
+
+# Unsichtbarer Start: "conhost.exe --headless" erzeugt gar kein Fenster (auch nicht unter Windows Terminal).
+# Wird nur genutzt, wenn es verfuegbar ist und nachweislich funktioniert (siehe Pruefung unten).
+$conhost = Join-Path $env:SystemRoot 'System32\conhost.exe'
+$headless = (Test-Path $conhost) -and ([Environment]::OSVersion.Version.Build -ge 18362)
+
+function Test-Running {
+    $m = $null
+    if ([System.Threading.Mutex]::TryOpenExisting('Local\TaskbarAutoHide', [ref]$m)) { $m.Dispose(); return $true }
+    return $false
+}
 
 # Alte Instanz beenden, falls vorhanden
 Get-CimInstance Win32_Process -Filter "Name = 'powershell.exe'" |
@@ -52,7 +63,6 @@ Get-CimInstance Win32_Process -Filter "Name = 'powershell.exe'" |
 
 $viaTask = $false
 try {
-    $action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument $psArgs
     # Zwei Ausloeser: bei der Anmeldung und alle 5 Minuten (Waechter). Faellt das Script aus
     # (z.B. nach Ruhezustand oder Abmelden), startet die Aufgabe es spaetestens nach 5 Minuten neu.
     # Laeuft es noch, wird der Start wegen MultipleInstances=IgnoreNew uebersprungen
@@ -65,9 +75,22 @@ try {
         -ExecutionTimeLimit ([TimeSpan]::Zero) `
         -MultipleInstances IgnoreNew -StartWhenAvailable
     $principal = New-ScheduledTaskPrincipal -UserId "$env:USERDOMAIN\$env:USERNAME" -LogonType Interactive
-    Register-ScheduledTask -TaskName $taskName -Action $action -Trigger @($logonTrigger, $watchdogTrigger) `
-        -Settings $settings -Principal $principal -Force | Out-Null
-    Start-ScheduledTask -TaskName $taskName
+    foreach ($attempt in 1..2) {
+        if ($headless) {
+            $action = New-ScheduledTaskAction -Execute $conhost -Argument "--headless powershell.exe $psArgs"
+        } else {
+            $action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument $psArgs
+        }
+        Register-ScheduledTask -TaskName $taskName -Action $action -Trigger @($logonTrigger, $watchdogTrigger) `
+            -Settings $settings -Principal $principal -Force | Out-Null
+        Start-ScheduledTask -TaskName $taskName
+        if (-not $headless) { break }
+        $running = $false
+        foreach ($i in 1..15) { Start-Sleep -Seconds 1; if (Test-Running) { $running = $true; break } }
+        if ($running) { break }
+        Write-Warning 'Unsichtbarer Start (conhost --headless) funktioniert hier nicht, verwende den normalen Start.'
+        $headless = $false
+    }
     $viaTask = $true
     Write-Host "Geplante Aufgabe '$taskName' angelegt und gestartet."
 } catch {
@@ -91,7 +114,9 @@ try {
     $runKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
     # Mit Aufgabe: Run-Key startet die Aufgabe (so laeuft das Script immer als Aufgaben-Instanz).
     # Ohne Aufgabe (Fallback): Run-Key startet das Script direkt.
-    $runValue = if ($viaTask) { "schtasks.exe /run /tn `"$taskName`"" } else { "powershell.exe $psArgs" }
+    $runValue = if ($viaTask -and $headless) { "`"$conhost`" --headless schtasks.exe /run /tn `"$taskName`"" }
+                elseif ($viaTask) { "schtasks.exe /run /tn `"$taskName`"" }
+                else { "powershell.exe $psArgs" }
     Set-ItemProperty -Path $runKey -Name $taskName -Value $runValue
     Write-Host 'Zusaetzlicher Autostart (Run-Key) eingetragen.'
 } catch {

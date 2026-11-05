@@ -45,7 +45,7 @@ function Start-Tah {
     try {
         Start-ScheduledTask -TaskName $taskName
     } catch {
-        Start-Process -FilePath 'powershell.exe' -WindowStyle Hidden -ArgumentList "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$main`""
+        Start-Process -FilePath 'powershell.exe' -WindowStyle Hidden -ArgumentList "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$main`" -Background"
     }
 }
 
