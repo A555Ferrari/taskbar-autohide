@@ -2,7 +2,7 @@
 
 ![Windows 10/11](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?logo=windows&logoColor=white)
 ![PowerShell 5.1+](https://img.shields.io/badge/PowerShell-5.1%2B-5391FE?logo=powershell&logoColor=white)
-![Version 1.0.1](https://img.shields.io/badge/Version-1.0.1-blue)
+![Version 1.0.2](https://img.shields.io/badge/Version-1.0.2-blue)
 ![Lizenz MIT](https://img.shields.io/badge/Lizenz-MIT-green)
 
 [English](README.md) | **Deutsch**
@@ -57,8 +57,8 @@ Was `Install.ps1` genau macht:
 
 - Dateien nach `%LOCALAPPDATA%\TaskbarAutoHide` kopieren (eine vorhandene `config.json` bleibt erhalten)
 - Dateien entsperren (`Unblock-File`), weil Windows heruntergeladene Scripts sonst blockieren kann
-- geplante Aufgabe `TaskbarAutoHide` anlegen (Start bei Anmeldung) und starten
-- zusätzlich einen Autostart-Eintrag im Run-Key des Benutzers setzen, falls die Aufgabe beim Login nicht anläuft (doppelter Start ist harmlos, es läuft immer nur eine Instanz)
+- geplante Aufgabe `TaskbarAutoHide` mit zwei Auslösern anlegen (bei der Anmeldung und alle 5 Minuten als Wächter, der das Script neu startet, falls es nicht mehr läuft) und starten
+- zusätzlich einen Autostart-Eintrag im Run-Key des Benutzers setzen, der die Aufgabe startet (doppelter Start ist harmlos, es läuft immer nur eine Instanz)
 - falls geplante Aufgaben nicht erlaubt sind: Verknüpfung im Autostart-Ordner als Fallback
 
 Den Modus kannst du direkt bei der Installation setzen:
@@ -157,7 +157,7 @@ Das entfernt die geplante Aufgabe bzw. die Autostart-Verknüpfung, beendet den P
 Du bist im falschen Ordner. Nach dem Entpacken liegt die Datei oft eine Ebene tiefer. Mit `Get-ChildItem -Path $env:USERPROFILE -Recurse -Filter Install.ps1 -ErrorAction SilentlyContinue | Select-Object FullName` findest du sie.
 
 **Nach Abmelden oder Neustart funktioniert es nicht mehr.**
-Seit Version 1.0.1 startet das Script über die geplante Aufgabe und zusätzlich über den Run-Key. Mit einer älteren Version `Install.ps1` einfach erneut ausführen. Prüfen kannst du es mit `Get-ScheduledTask -TaskName TaskbarAutoHide | Get-ScheduledTaskInfo` (`LastRunTime` sollte der letzte Login sein) und `Start-ScheduledTask -TaskName TaskbarAutoHide` startet es von Hand.
+Seit Version 1.0.2 prüft die geplante Aufgabe alle 5 Minuten, ob das Script läuft, und startet es sonst neu (zusätzlich zum Start bei der Anmeldung und dem Run-Key). Nach Abmelden, Ruhezustand oder Neustart kann es also bis zu 5 Minuten dauern, bis es wieder läuft. Mit einer älteren Version `Install.ps1` einfach erneut ausführen. Prüfen kannst du es mit `Get-ScheduledTask -TaskName TaskbarAutoHide | Get-ScheduledTaskInfo` (`LastRunTime` sollte der letzte Login sein) und `Start-ScheduledTask -TaskName TaskbarAutoHide` startet es von Hand.
 
 **Nach der Installation bleibt die Taskleiste sichtbar.**
 `-Status` ausführen. Steht dort `Gilt als angedockt: True`, aber `Auto-Hide aktuell: False`, läuft der Hintergrundprozess nicht. Dann `Start-ScheduledTask -TaskName TaskbarAutoHide` und ins Log schauen.

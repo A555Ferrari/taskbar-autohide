@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.0.2] - 2026-11-05
+
+### Behoben
+- Das Script lief nach Abmelden, Ruhezustand oder Neustart teils nicht mehr, und weder die Anmeldung noch der Run-Key startete es neu (Taskleiste blieb im alten Zustand). Die geplante Aufgabe hat jetzt zwei Auslöser: bei der Anmeldung und alle 5 Minuten als Wächter. Läuft das Script nicht mehr, wird es spätestens nach 5 Minuten neu gestartet. Der Run-Key startet jetzt die Aufgabe statt das Script direkt, damit nie zwei Instanzen entstehen.
+
 ## [1.0.1] - 2026-11-04
 
 ### Behoben

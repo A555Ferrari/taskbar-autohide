@@ -53,13 +53,19 @@ Get-CimInstance Win32_Process -Filter "Name = 'powershell.exe'" |
 $viaTask = $false
 try {
     $action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument $psArgs
-    $trigger = New-ScheduledTaskTrigger -AtLogOn -User "$env:USERDOMAIN\$env:USERNAME"
+    # Zwei Ausloeser: bei der Anmeldung und alle 5 Minuten (Waechter). Faellt das Script aus
+    # (z.B. nach Ruhezustand oder Abmelden), startet die Aufgabe es spaetestens nach 5 Minuten neu.
+    # Laeuft es noch, wird der Start wegen MultipleInstances=IgnoreNew uebersprungen
+    # (kein Doppelstart, kein Fenster-Aufblitzen).
+    $logonTrigger = New-ScheduledTaskTrigger -AtLogOn -User "$env:USERDOMAIN\$env:USERNAME"
+    $watchdogTrigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) `
+        -RepetitionInterval (New-TimeSpan -Minutes 5) -RepetitionDuration (New-TimeSpan -Days 3650)
     $settings = New-ScheduledTaskSettingsSet `
         -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
         -ExecutionTimeLimit ([TimeSpan]::Zero) `
         -MultipleInstances IgnoreNew -StartWhenAvailable
     $principal = New-ScheduledTaskPrincipal -UserId "$env:USERDOMAIN\$env:USERNAME" -LogonType Interactive
-    Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger `
+    Register-ScheduledTask -TaskName $taskName -Action $action -Trigger @($logonTrigger, $watchdogTrigger) `
         -Settings $settings -Principal $principal -Force | Out-Null
     Start-ScheduledTask -TaskName $taskName
     $viaTask = $true
@@ -83,7 +89,10 @@ try {
 # Doppelter Start ist unkritisch, das Script erlaubt nur eine Instanz (Mutex).
 try {
     $runKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
-    Set-ItemProperty -Path $runKey -Name $taskName -Value "powershell.exe $psArgs"
+    # Mit Aufgabe: Run-Key startet die Aufgabe (so laeuft das Script immer als Aufgaben-Instanz).
+    # Ohne Aufgabe (Fallback): Run-Key startet das Script direkt.
+    $runValue = if ($viaTask) { "schtasks.exe /run /tn `"$taskName`"" } else { "powershell.exe $psArgs" }
+    Set-ItemProperty -Path $runKey -Name $taskName -Value $runValue
     Write-Host 'Zusaetzlicher Autostart (Run-Key) eingetragen.'
 } catch {
     Write-Warning "Run-Key nicht moeglich: $($_.Exception.Message)"

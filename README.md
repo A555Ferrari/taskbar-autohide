@@ -2,7 +2,7 @@
 
 ![Windows 10/11](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?logo=windows&logoColor=white)
 ![PowerShell 5.1+](https://img.shields.io/badge/PowerShell-5.1%2B-5391FE?logo=powershell&logoColor=white)
-![Version 1.0.1](https://img.shields.io/badge/Version-1.0.1-blue)
+![Version 1.0.2](https://img.shields.io/badge/Version-1.0.2-blue)
 ![License MIT](https://img.shields.io/badge/License-MIT-green)
 
 **English** | [Deutsch](README.de.md)
@@ -44,8 +44,8 @@ What `Install.ps1` does:
 
 - copies the files to `%LOCALAPPDATA%\TaskbarAutoHide` (an existing `config.json` is kept)
 - unblocks the files (`Unblock-File`), because Windows may block downloaded scripts
-- creates a scheduled task `TaskbarAutoHide` (runs at sign-in) and starts it
-- additionally sets an autostart entry in the user's Run key as a safety net in case the task does not fire at sign-in (starting twice is harmless, only one instance ever runs)
+- creates a scheduled task `TaskbarAutoHide` with two triggers (at sign-in, and every 5 minutes as a watchdog that restarts the script if it is no longer running) and starts it
+- additionally sets an autostart entry in the user's Run key that starts the task (starting twice is harmless, only one instance ever runs)
 - if scheduled tasks are not allowed: falls back to a shortcut in the Startup folder
 
 Set the mode right at install time:
@@ -144,7 +144,7 @@ This removes the scheduled task, the Run-key entry and the Startup shortcut, sto
 You are in the wrong folder. After extracting, the file is often one level deeper. `Get-ChildItem -Path $env:USERPROFILE -Recurse -Filter Install.ps1 -ErrorAction SilentlyContinue | Select-Object FullName` finds it.
 
 **It stops working after sign-out or reboot.**
-Since version 1.0.1 the script starts via the scheduled task and additionally via the Run key. On an older version, just run `Install.ps1` again. Check with `Get-ScheduledTask -TaskName TaskbarAutoHide | Get-ScheduledTaskInfo` (`LastRunTime` should be your last sign-in); `Start-ScheduledTask -TaskName TaskbarAutoHide` starts it by hand.
+Since version 1.0.2 the scheduled task checks every 5 minutes whether the script is running and restarts it if not (on top of the sign-in trigger and the Run key), so after a sign-out, hibernation or reboot it can take up to 5 minutes until it is back. On an older version, just run `Install.ps1` again. Check with `Get-ScheduledTask -TaskName TaskbarAutoHide | Get-ScheduledTaskInfo` (`LastRunTime` should be your last sign-in); `Start-ScheduledTask -TaskName TaskbarAutoHide` starts it by hand.
 
 **The taskbar stays visible after installing.**
 Run `-Status`. If it says `Gilt als angedockt: True` but `Auto-Hide aktuell: False`, the background process is not running. Run `Start-ScheduledTask -TaskName TaskbarAutoHide` and check the log.
