@@ -2,5 +2,6 @@
   "mode": "monitors",
   "minExternalMonitors": 1,
   "dockMatch": [],
-  "pollSeconds": 5
+  "pollSeconds": 5,
+  "pauseWhileRunning": ["SafeExamBrowser", "SafeExamBrowser.Client", "SafeExamBrowser.Runtime", "SebWindowsClient"]
 }
