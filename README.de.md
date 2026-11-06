@@ -2,7 +2,7 @@
 
 ![Windows 10/11](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?logo=windows&logoColor=white)
 ![PowerShell 5.1+](https://img.shields.io/badge/PowerShell-5.1%2B-5391FE?logo=powershell&logoColor=white)
-![Version 1.0.5](https://img.shields.io/badge/Version-1.0.5-blue)
+![Version 1.0.6](https://img.shields.io/badge/Version-1.0.6-blue)
 ![Lizenz MIT](https://img.shields.io/badge/Lizenz-MIT-green)
 
 [English](README.md) | **Deutsch**
@@ -19,6 +19,7 @@ Ohne Zusatzsoftware, ohne Admin-Rechte, nur PowerShell. Kein Netzwerkzugriff im 
 - [Konfiguration](#konfiguration)
 - [Dockingstation einrichten](#dockingstation-einrichten)
 - [Befehle](#befehle)
+- [Prüfungen (Safe Exam Browser)](#prüfungen-safe-exam-browser)
 - [Deinstallation](#deinstallation)
 - [Fehlersuche](#fehlersuche)
 - [Hinweise und Grenzen](#hinweise-und-grenzen)
@@ -98,6 +99,7 @@ Datei: `%LOCALAPPDATA%\TaskbarAutoHide\config.json`
 | `minExternalMonitors` | Ab wie vielen externen Monitoren gilt es als "angedockt" (Standard 1). |
 | `dockMatch` | Liste von Mustern (Wildcards), z.B. `["*Dell Dock*"]`. Geprüft wird gegen Gerätename und Instanz-ID. Nur relevant bei `dock` und `either`. |
 | `pollSeconds` | Prüfintervall in Sekunden (mindestens 2). Im Dock-Modus eher 10 nehmen, die Geräteabfrage ist etwas träger. |
+| `pauseWhileRunning` | Prozessnamen (ohne `.exe`). Läuft einer davon, lässt das Script die Taskleiste in Ruhe. Standard: der Safe Exam Browser (`SafeExamBrowser`, `SafeExamBrowser.Client`, `SafeExamBrowser.Runtime`, `SebWindowsClient`). |
 
 ## Dockingstation einrichten
 
@@ -134,11 +136,18 @@ Nach der Installation gibt es den Befehl `tah`. Er funktioniert in einem **neuen
 | `tah config` | `config.json` im Editor öffnen |
 | `tah start` / `tah restart` | Script starten / neu starten |
 | `tah stop` | Script beenden (der Wächter startet es nach spätestens 5 Minuten wieder, dauerhaft entfernen geht mit `tah uninstall`) |
+| `tah pause` / `tah resume` | Script und Autostart komplett aus- (z.B. vor einer Prüfung) und wieder einschalten |
 | `tah version` | Installierte Version |
 | `tah uninstall` | Alles entfernen |
 | `tah help` | Befehlsübersicht |
 
 Das Log wird bei Zustandswechseln geschrieben und bei 200 KB automatisch gekürzt. Zum Testen des Ausblendens kannst du außerdem `& "$env:LOCALAPPDATA\TaskbarAutoHide\TaskbarAutoHide.ps1" -Force Hide` bzw. `-Force Show` ausführen.
+
+## Prüfungen (Safe Exam Browser)
+
+Solange der Safe Exam Browser (SEB) läuft, pausiert das Script von selbst: Es ändert nichts an der Taskleiste und fragt keine Monitore ab. Nach dem Ende von SEB macht es weiter und setzt den Zustand neu. `tah status` zeigt dann `Pausiert (Pruefung): JA`.
+
+Verbietet oder beendet deine Prüfungsumgebung auch andere Prozesse (z.B. PowerShell) oder prüft sie auf Hintergrundprogramme, schaltest du das Tool vorher mit `tah pause` ganz aus und danach mit `tah resume` wieder ein. Ein anderes Prüfungsprogramm kannst du in `config.json` bei `pauseWhileRunning` ergänzen (den Prozessnamen findest du mit `Get-Process`).
 
 ## Deinstallation
 

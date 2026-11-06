@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.6] - 2026-11-06
+
+### Hinzugefügt
+- Kompatibilität mit dem Safe Exam Browser (SEB): Läuft SEB, pausiert das Script komplett (keine Änderung an der Taskleiste, keine WMI-Abfragen) und macht danach automatisch weiter. Welche Programme pausieren, steht in `config.json` unter `pauseWhileRunning`.
+- `tah pause` und `tah resume`: Script und Autostart vor einer Prüfung ganz ausschalten und danach wieder an.
+- `tah status` zeigt, ob gerade pausiert wird.
+
 ## [1.0.5] - 2026-11-05
 
 ### Behoben

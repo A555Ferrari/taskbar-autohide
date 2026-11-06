@@ -2,7 +2,7 @@
 
 ![Windows 10/11](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4?logo=windows&logoColor=white)
 ![PowerShell 5.1+](https://img.shields.io/badge/PowerShell-5.1%2B-5391FE?logo=powershell&logoColor=white)
-![Version 1.0.5](https://img.shields.io/badge/Version-1.0.5-blue)
+![Version 1.0.6](https://img.shields.io/badge/Version-1.0.6-blue)
 ![License MIT](https://img.shields.io/badge/License-MIT-green)
 
 **English** | [Deutsch](README.de.md)
@@ -85,6 +85,7 @@ File: `%LOCALAPPDATA%\TaskbarAutoHide\config.json`
 | `minExternalMonitors` | How many external monitors count as "docked" (default 1). |
 | `dockMatch` | List of wildcard patterns, e.g. `["*Dell Dock*"]`, matched against device name and instance ID. Only relevant for `dock` and `either`. |
 | `pollSeconds` | Check interval in seconds (minimum 2). Use about 10 in dock mode, the device query is a bit slower. |
+| `pauseWhileRunning` | Process names (without `.exe`). While one of them is running, the script leaves the taskbar alone. Default: the Safe Exam Browser (`SafeExamBrowser`, `SafeExamBrowser.Client`, `SafeExamBrowser.Runtime`, `SebWindowsClient`). |
 
 ## Setting up a docking station
 
@@ -121,11 +122,18 @@ After installing there is the `tah` command. It works in a **new** terminal (clo
 | `tah config` | open `config.json` in an editor |
 | `tah start` / `tah restart` | start / restart the script |
 | `tah stop` | stop the script (the watchdog restarts it within 5 minutes; to remove it for good use `tah uninstall`) |
+| `tah pause` / `tah resume` | switch the script and its autostart off completely (e.g. before an exam) and back on |
 | `tah version` | show the installed version |
 | `tah uninstall` | remove everything |
 | `tah help` | command overview |
 
 The log is written on state changes and trimmed automatically at 200 KB. To test hiding you can also run `& "$env:LOCALAPPDATA\TaskbarAutoHide\TaskbarAutoHide.ps1" -Force Hide` or `-Force Show`.
+
+## Exams (Safe Exam Browser)
+
+While the Safe Exam Browser (SEB) is running, the script pauses on its own: it does not touch the taskbar and does not query monitors. When SEB ends, it continues and re-applies the state. `tah status` shows `Pausiert (Pruefung): JA`.
+
+If your exam setup also forbids or kills other processes (e.g. PowerShell) or checks for background programs, switch the tool off completely beforehand with `tah pause`, and back on afterwards with `tah resume`. Another exam program can be added to `pauseWhileRunning` in `config.json` (find the process name with `Get-Process`).
 
 ## Uninstall
 

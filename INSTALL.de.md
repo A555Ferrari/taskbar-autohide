@@ -36,6 +36,7 @@ In einem **neuen** Terminal (ein schon offenes Fenster einmal schließen und neu
 | `tah config` | Einstellungen öffnen |
 | `tah start` / `tah restart` | Script starten / neu starten |
 | `tah stop` | Script beenden (startet nach spätestens 5 Minuten wieder, dauerhaft: `tah uninstall`) |
+| `tah pause` / `tah resume` | Vor einer Prüfung ganz ausschalten / danach wieder einschalten |
 | `tah uninstall` | Alles entfernen |
 | `tah help` | Übersicht |
 

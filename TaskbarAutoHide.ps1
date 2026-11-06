@@ -150,6 +150,8 @@ function Get-Config {
         minExternalMonitors = 1
         dockMatch          = @()
         pollSeconds        = 5
+        # Solange eines dieser Programme laeuft, laesst das Script die Taskleiste in Ruhe (Pruefungssoftware).
+        pauseWhileRunning  = @('SafeExamBrowser', 'SafeExamBrowser.Client', 'SafeExamBrowser.Runtime', 'SebWindowsClient')
     }
     if (Test-Path $ConfigPath) {
         try {
@@ -162,10 +164,21 @@ function Get-Config {
         }
     }
     $cfg.dockMatch = @($cfg.dockMatch)
+    $cfg.pauseWhileRunning = @($cfg.pauseWhileRunning | Where-Object { $_ } | ForEach-Object { ([string]$_) -replace '\.exe$', '' })
     if ($cfg.mode -notin 'monitors', 'dock', 'either') { $cfg.mode = 'monitors' }
     $cfg.minExternalMonitors = [Math]::Max(1, [int]$cfg.minExternalMonitors)
     $cfg.pollSeconds = [Math]::Max(2, [int]$cfg.pollSeconds)
     $cfg
+}
+
+# Name des ersten laufenden Programms aus pauseWhileRunning (z.B. Safe Exam Browser), sonst $null.
+function Get-PauseReason($cfg) {
+    foreach ($name in $cfg.pauseWhileRunning) {
+        try {
+            if (Get-Process -Name $name -ErrorAction SilentlyContinue) { return $name }
+        } catch { }
+    }
+    return $null
 }
 
 # Anzahl aktiver Bildschirme, die NICHT das interne Laptop-Display sind.
@@ -235,6 +248,7 @@ if ($Force) {
 
 if ($Status) {
     $cfg = Get-Config
+    $pauseReason = Get-PauseReason $cfg
     $state = Get-DockState $cfg
     $verFile = Join-Path $ScriptDir 'VERSION'
     $version = if (Test-Path $verFile) { (Get-Content $verFile -Raw).Trim() } else { 'unbekannt' }
@@ -247,6 +261,7 @@ if ($Status) {
     "Externe Monitore:       $($state.ExternalMonitors) (Schwelle: $($cfg.minExternalMonitors))"
     "Dock-Muster:            $(if ($cfg.dockMatch.Count) { $cfg.dockMatch -join ', ' } else { '(keine)' })"
     "Dock erkannt:           $($state.DockPresent)"
+    "Pausiert (Pruefung):    $(if ($pauseReason) { "JA, $pauseReason laeuft" } else { 'Nein' })"
     "Gilt als angedockt:     $($state.Docked)"
     "Auto-Hide aktuell:      $([TaskbarNative]::GetAutoHide())"
     return
@@ -271,11 +286,27 @@ if (-not $mutex.WaitOne(0)) {
 Write-Log 'Gestartet'
 $lastDocked = $null
 $lastTray = 0L
+$pausedBy = $null
 
 try {
     while ($true) {
         try {
             $cfg = Get-Config          # jedes Mal neu lesen: Aenderungen wirken ohne Neustart
+
+            # Pruefungssoftware (Safe Exam Browser): nichts anfassen, auch keine WMI-Abfragen
+            $reason = Get-PauseReason $cfg
+            if ($reason) {
+                if (-not $pausedBy) { Write-Log "Pausiert: $reason laeuft, Taskleiste wird nicht veraendert" }
+                $pausedBy = $reason
+                Start-Sleep -Seconds $cfg.pollSeconds
+                continue
+            }
+            if ($pausedBy) {
+                Write-Log "Fortgesetzt: $pausedBy beendet"
+                $pausedBy = $null
+                $lastDocked = $null    # Zustand danach neu anwenden
+            }
+
             $state = Get-DockState $cfg
             $tray = [TaskbarNative]::TrayHandle()
 

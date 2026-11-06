@@ -25,6 +25,8 @@ function Show-Help {
     Write-Host '  tah start       Script starten'
     Write-Host '  tah restart     Script neu starten'
     Write-Host '  tah stop        Script beenden (der Waechter startet es nach spaetestens 5 Minuten wieder)'
+    Write-Host '  tah pause       Dauerhaft pausieren (z.B. vor einer Pruefung), Autostart aus'
+    Write-Host '  tah resume      Nach tah pause wieder einschalten'
     Write-Host '  tah version     Installierte Version anzeigen'
     Write-Host '  tah uninstall   Alles entfernen'
     Write-Host '  tah help        Diese Uebersicht'
@@ -69,6 +71,17 @@ switch ($Command.ToLowerInvariant()) {
         Stop-Tah
         Write-Host 'Script beendet. Der Waechter der geplanten Aufgabe startet es nach spaetestens 5 Minuten wieder.'
         Write-Host 'Dauerhaft entfernen: tah uninstall'
+    }
+    'pause' {
+        try { Disable-ScheduledTask -TaskName $taskName | Out-Null } catch { Write-Host "Aufgabe nicht deaktivierbar: $($_.Exception.Message)" }
+        Stop-Tah
+        Write-Host 'Pausiert: Script beendet, Autostart-Aufgabe deaktiviert. Wieder einschalten: tah resume'
+    }
+    'resume' {
+        try { Enable-ScheduledTask -TaskName $taskName | Out-Null } catch { Write-Host "Aufgabe nicht aktivierbar: $($_.Exception.Message)" }
+        Start-Tah
+        Start-Sleep -Seconds 2
+        Show-Status
     }
     'log' {
         $logFile = Join-Path $dir 'TaskbarAutoHide.log'
